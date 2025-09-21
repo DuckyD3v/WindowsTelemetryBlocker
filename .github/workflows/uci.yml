@@ -63,7 +63,8 @@ jobs:
         $modules = Get-ChildItem modules -Filter *.ps1 | Where-Object { $_.Name -notlike '*rollback.ps1' -and $_.Name -ne 'common.ps1' }
         foreach ($mod in $modules) {
           $content = Get-Content $mod.FullName -Raw
-          if ($content -notmatch '\\. \"\\$PSScriptRoot/common.ps1\"') {
+          # Allow for single/double quotes, optional whitespace, and no blank lines before dot-source
+          if ($content -notmatch '(?m)^\s*\.\s+["'']\$PSScriptRoot/common.ps1["'']') {
             throw "$($mod.Name) does not dot-source common.ps1"
           }
         }
