@@ -18,6 +18,12 @@ A lightweight, open-source toolkit to disable Windows telemetry and improve priv
 - 🗑️ Remove Bloatware (Optional)
 - 🎯 Interactive Module Selection
 - 🔄 Easy to Use & Maintain
+- 🧩 Modular privacy and telemetry blocking
+- 📝 Dry-run mode, advanced logging, and error reporting
+- 🧠 Dependency-aware module execution
+- ⏪ Rollback support for most modules
+- 💾 System restore point creation
+- 🖥️ Interactive and batch modes
 
 ## 🚀 Quick Start
 
@@ -44,6 +50,9 @@ A lightweight, open-source toolkit to disable Windows telemetry and improve priv
 
 # Interactive mode
 .\windows-telemetry-blocker.ps1 -interactive
+
+# Advanced options
+powershell -ExecutionPolicy Bypass -File windows-telemetry-blocker.ps1 -all -dryrun -verbose -rollbackOnFailure
 ```
 
 ## 🧩 Modules
@@ -54,6 +63,19 @@ A lightweight, open-source toolkit to disable Windows telemetry and improve priv
 | **services.ps1** | Disables DiagTrack, dmwappushsvc, RetailDemo, and Xbox Game Monitoring |
 | **apps.ps1** | Disables background apps, removes bloatware (optional), and disables Widgets/News/OneDrive |
 | **misc.ps1** | Disables Wi-Fi Sense, Timeline/Activity History, and cloud clipboard |
+
+## ⏪ Rollback
+If a module fails and `-rollbackOnFailure` is set, rollback scripts in `modules/` will attempt to revert changes.
+
+## 📝 Logging
+- `telemetry-blocker.log`: Main log
+- `telemetry-blocker-errors.log`: Errors
+- `telemetry-blocker-stats.log`: Execution stats
+
+## ⚙️ Customization
+- Add or edit modules in `modules/`
+- Add rollback logic in `modules/rollback/` as needed
+- Common functions in `modules/common.ps1`
 
 > [!WARNING]
 > This script requires administrative privileges to modify system settings. Always run as administrator.
@@ -70,3 +92,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Inspired by [ShutUp10++](https://www.oo-software.com/en/shutup10)
 - Thanks to all contributors and the open-source community
+
+---
+**Test on a VM before use in production!**
