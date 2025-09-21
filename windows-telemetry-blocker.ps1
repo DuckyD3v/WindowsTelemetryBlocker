@@ -1,3 +1,10 @@
+# ===============================
+# Windows Telemetry Blocker
+# Script Version: nextgen-0.1-DB6
+# ===============================
+
+$ScriptVersion = 'nextgen-0.1-DB6'
+
 param(
     [switch]$all,
     [string[]]$modules,
