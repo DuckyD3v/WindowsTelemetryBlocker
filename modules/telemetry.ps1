@@ -1,7 +1,6 @@
 # Module: telemetry.ps1
 # Purpose: Disables Windows telemetry and related privacy-invading features.
 # Used by: windows-telemetry-blocker.ps1
-
 . "$PSScriptRoot/common.ps1"
 if (-not $global:dryrun) { $global:dryrun = $false }
 

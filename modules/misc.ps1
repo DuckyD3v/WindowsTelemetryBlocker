@@ -1,7 +1,6 @@
 # Module: misc.ps1
 # Purpose: Applies miscellaneous privacy and anti-telemetry tweaks.
 # Used by: windows-telemetry-blocker.ps1
-
 . "$PSScriptRoot/common.ps1"
 if (-not $global:dryrun) { $global:dryrun = $false }
 
