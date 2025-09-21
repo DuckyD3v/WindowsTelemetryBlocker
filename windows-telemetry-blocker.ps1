@@ -8,8 +8,10 @@ $ScriptVersion = 'nextgen-0.1-DB6'
 param(
     [switch]$all,
     [string[]]$modules,
+    [string[]]$exclude,
     [switch]$interactive,
-    [switch]$dryrun
+    [switch]$dryrun,
+    [switch]$whatif
 )
 
 # --- Version Banner ---
@@ -25,6 +27,20 @@ $VerbosePreference = 'Continue'
 Write-Host "Script started at: $(Get-Date)" -ForegroundColor Yellow
 Write-Host "Running from: $PSScriptRoot" -ForegroundColor Yellow
 Write-Host "================================`n"
+
+# Registry backup/export before changes
+function Export-RegistryBackup {
+    $backupDir = Join-Path $PSScriptRoot "registry-backups"
+    if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir | Out-Null }
+    $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $backupFile = Join-Path $backupDir "regbackup_$timestamp.reg"
+    Write-Host "Exporting registry backup to $backupFile ..." -ForegroundColor Cyan
+    reg export HKLM $backupFile /y | Out-Null
+    Write-Host "✓ Registry backup complete." -ForegroundColor Green
+}
+
+# Only export backup if not dryrun
+if (-not $dryrun) { Export-RegistryBackup }
 
 # Logging setup
 $logFile = Join-Path $PSScriptRoot "telemetry-blocker.log"
