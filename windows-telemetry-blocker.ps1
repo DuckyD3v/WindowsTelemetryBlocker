@@ -451,7 +451,8 @@ $reportContent += "**Windows Build:** $winBuild"
 $reportContent += "**Execution Time:** $($duration.ToString())"
 $reportContent += ""
 $reportContent += "## Modules Run"
-foreach ($mod in $moduleResults.Keys) {
+$moduleKeys = $moduleResults.Keys
+foreach ($mod in $moduleKeys) {
     $res = $moduleResults[$mod]
     $line = "- $mod: $($res.Status) (Start: $($res.Start), End: $($res.End))"
     if ($res.Error) { $line += " - Error: $($res.Error)" }
