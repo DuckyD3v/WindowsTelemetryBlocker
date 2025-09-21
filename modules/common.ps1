@@ -27,7 +27,7 @@ function Set-RegistryValue {
     )
     if ($global:dryrun) {
         Write-Host "[DRY-RUN] Would set $Path\$Name = $Value ($Type)" -ForegroundColor DarkYellow
-        Write-ModuleLog "[DRY-RUN] Would set $Path\$Name = $Value ($Type)"
+    Write-ModuleLog "[DRY-RUN] Would set $($Path)\$($Name) = $Value ($Type)"
     } else {
         try {
             if ($Type -eq "DWord" -or $Type -eq "QWord") {
@@ -41,10 +41,10 @@ function Set-RegistryValue {
             } else {
                 Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type
             }
-            Write-ModuleLog "Set $Path\$Name = $Value ($Type)"
+            Write-ModuleLog "Set $($Path)\$($Name) = $Value ($Type)"
         } catch {
-            Write-Host "[ERROR] Failed to set $Path\$Name: $_" -ForegroundColor Red
-            Write-ModuleLog "[ERROR] Failed to set $Path\$Name: $_"
+            Write-Host "[ERROR] Failed to set $($Path)\$($Name): $_" -ForegroundColor Red
+            Write-ModuleLog "[ERROR] Failed to set $($Path)\$($Name): $_"
         }
     }
 }
