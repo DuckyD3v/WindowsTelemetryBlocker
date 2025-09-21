@@ -349,8 +349,8 @@ foreach ($mod in $toRunResolved) {
                         Write-Log "Rollback for $rmod completed"
                         $rollbackModules += $rmod
                     } catch {
-                        Write-Host "✗ Rollback failed for $rmod: $_" -ForegroundColor Red
-                        Write-Log "Rollback failed for $rmod: $_" -Error
+                        Write-Host "✗ Rollback failed for $rmod`: $_" -ForegroundColor Red
+                        Write-Log "Rollback failed for $rmod`: $_" -Error
                     }
                 } else {
                     Write-Host "No rollback script for $rmod" -ForegroundColor DarkYellow
