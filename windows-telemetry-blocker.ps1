@@ -454,7 +454,7 @@ $reportContent += "## Modules Run"
 $moduleKeys = $moduleResults.Keys
 foreach ($mod in $moduleKeys) {
     $res = $moduleResults[$mod]
-    $line = "- $mod: $($res.Status) (Start: $($res.Start), End: $($res.End))"
+    $line = "- $mod $($res.Status) (Start: $($res.Start), End: $($res.End))"
     if ($res.Error) { $line += " - Error: $($res.Error)" }
     $reportContent += $line
 }
