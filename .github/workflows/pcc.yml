@@ -95,6 +95,6 @@ jobs:
       shell: pwsh
       run: |
         $main = Get-Content windows-telemetry-blocker.ps1 -Raw
-        if ($main -notmatch '\\$ScriptVersion') {
-          throw \"Script version banner missing in windows-telemetry-blocker.ps1\"
+        if ($main -notmatch 'Script Version:') {
+          throw "Script version banner missing in windows-telemetry-blocker.ps1"
         }
