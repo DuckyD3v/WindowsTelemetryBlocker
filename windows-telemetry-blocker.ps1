@@ -1,11 +1,45 @@
 param(
     [switch]$all,
     [string[]]$modules,
-    [switch]$interactive
+    [switch]$interactive,
+    [switch]$dryrun
 )
 
+# Enable detailed error reporting
+$ErrorActionPreference = 'Stop'
+$VerbosePreference = 'Continue'
+
+Write-Host "`n=== Windows Telemetry Blocker ===" -ForegroundColor Cyan
+Write-Host "Script started at: $(Get-Date)" -ForegroundColor Yellow
+Write-Host "Running from: $PSScriptRoot" -ForegroundColor Yellow
+Write-Host "================================`n"
+
+# Logging setup
+$logFile = Join-Path $PSScriptRoot "telemetry-blocker.log"
+function Write-Log {
+    param([string]$msg)
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    "$timestamp $msg" | Out-File -FilePath $logFile -Append -Encoding utf8
+}
+
+Write-Log "=== Script started ==="
+
+# Check if modules directory exists
+$modulesDir = Join-Path $PSScriptRoot "modules"
+if (-not (Test-Path $modulesDir)) {
+    Write-Host "Creating modules directory..." -ForegroundColor Yellow
+    try {
+        New-Item -ItemType Directory -Path $modulesDir -Force | Out-Null
+        Write-Host "✓ Modules directory created" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "✗ Failed to create modules directory: $_" -ForegroundColor Red
+        exit 1
+    }
+}
+
 # Function to create a system restore point
-function Create-SystemRestorePoint {
+function New-SystemRestorePoint {
     try {
         Write-Host "`nCreating system restore point..." -ForegroundColor Yellow
         $restorePointName = "Windows Telemetry Blocker - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
@@ -21,62 +55,87 @@ function Create-SystemRestorePoint {
 
 # Function to check Windows version compatibility
 function Test-WindowsVersion {
-    $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem
-    $version = [Version]$osInfo.Version
-    $minVersion = [Version]"10.0.19041" # Windows 10 2004 or later
+    try {
+        $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem
+        $version = [Version]$osInfo.Version
+        $minVersion = [Version]"10.0.19041" # Windows 10 2004 or later
 
-    if ($version -lt $minVersion) {
-        Write-Host "✗ Unsupported Windows version. This script requires Windows 10 2004 or later." -ForegroundColor Red
+        if ($version -lt $minVersion) {
+            Write-Host "✗ Unsupported Windows version. This script requires Windows 10 2004 or later." -ForegroundColor Red
+            return $false
+        }
+        Write-Host "✓ Windows version check passed" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "✗ Failed to check Windows version: $_" -ForegroundColor Red
         return $false
     }
-    Write-Host "✓ Windows version check passed" -ForegroundColor Green
-    return $true
 }
 
 # Function to check PowerShell version
 function Test-PowerShellVersion {
-    $psVersion = $PSVersionTable.PSVersion
-    $minVersion = [Version]"5.1"
+    try {
+        $psVersion = $PSVersionTable.PSVersion
+        $minVersion = [Version]"5.1"
 
-    if ($psVersion -lt $minVersion) {
-        Write-Host "✗ Unsupported PowerShell version. This script requires PowerShell 5.1 or later." -ForegroundColor Red
+        if ($psVersion -lt $minVersion) {
+            Write-Host "✗ Unsupported PowerShell version. This script requires PowerShell 5.1 or later." -ForegroundColor Red
+            return $false
+        }
+        Write-Host "✓ PowerShell version check passed" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "✗ Failed to check PowerShell version: $_" -ForegroundColor Red
         return $false
     }
-    Write-Host "✓ PowerShell version check passed" -ForegroundColor Green
-    return $true
 }
 
 # Function to check for admin privileges
 function Test-AdminPrivileges {
-    $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    if (-not $isAdmin) {
-        Write-Host "✗ This script requires administrative privileges. Please run as administrator." -ForegroundColor Red
+    try {
+        $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        if (-not $isAdmin) {
+            Write-Host "✗ This script requires administrative privileges. Please run as administrator." -ForegroundColor Red
+            return $false
+        }
+        Write-Host "✓ Administrative privileges confirmed" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "✗ Failed to check admin privileges: $_" -ForegroundColor Red
         return $false
     }
-    Write-Host "✓ Administrative privileges confirmed" -ForegroundColor Green
-    return $true
 }
 
-# Function to check for required Windows features
-function Test-RequiredFeatures {
-    $requiredFeatures = @(
-        "Microsoft-Windows-SystemRestore",
-        "Microsoft-Windows-PowerShell"
-    )
-
-    $missingFeatures = @()
-    foreach ($feature in $requiredFeatures) {
-        if (-not (Get-WindowsOptionalFeature -Online -FeatureName $feature -ErrorAction SilentlyContinue)) {
-            $missingFeatures += $feature
-        }
+# Dry-run helper
+function Invoke-IfNotDryRun {
+    param([scriptblock]$Action, [string]$Description)
+    if ($dryrun) {
+        Write-Host "[DRY-RUN] $Description" -ForegroundColor DarkYellow
+        Write-Log "[DRY-RUN] $Description"
+    } else {
+        & $Action
+        Write-Log "$Description"
     }
+}
 
-    if ($missingFeatures.Count -gt 0) {
-        Write-Host "✗ Missing required Windows features: $($missingFeatures -join ', ')" -ForegroundColor Red
-        return $false
+# Pending reboot check
+function Test-PendingReboot {
+    $pending = $false
+    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending") {
+        $pending = $true
     }
-    Write-Host "✓ Required Windows features check passed" -ForegroundColor Green
-    return $true
+    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired") {
+        $pending = $true
+    }
+    return $pending
+}
+
+if (Test-PendingReboot) {
+    Write-Host "⚠️  A system reboot is pending. It's recommended to reboot before running this script." -ForegroundColor Yellow
+    Write-Log "Pending reboot detected."
 }
 
 # Run pre-execution checks
@@ -85,8 +144,7 @@ Write-Host "`n=== Running Pre-Execution Checks ===" -ForegroundColor Cyan
 $checks = @(
     @{ Name = "Windows Version"; Function = { Test-WindowsVersion } },
     @{ Name = "PowerShell Version"; Function = { Test-PowerShellVersion } },
-    @{ Name = "Admin Privileges"; Function = { Test-AdminPrivileges } },
-    @{ Name = "Required Features"; Function = { Test-RequiredFeatures } }
+    @{ Name = "Admin Privileges"; Function = { Test-AdminPrivileges } }
 )
 
 $allChecksPassed = $true
@@ -94,18 +152,14 @@ foreach ($check in $checks) {
     Write-Host "`nChecking $($check.Name)..." -ForegroundColor Yellow
     if (-not (& $check.Function)) {
         $allChecksPassed = $false
+        Write-Host "Press any key to exit..."
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        exit 1
     }
 }
 
-if (-not $allChecksPassed) {
-    Write-Host "`n✗ Pre-execution checks failed. Please resolve the issues above and try again." -ForegroundColor Red
-    Write-Host "Press any key to exit..."
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-    exit 1
-}
-
 # Create system restore point
-if (-not (Create-SystemRestorePoint)) {
+if (-not (New-SystemRestorePoint)) {
     Write-Host "`n✗ Failed to create system restore point. Do you want to continue anyway? (Y/N)" -ForegroundColor Yellow
     $response = Read-Host
     if ($response -ne 'Y') {
@@ -192,19 +246,35 @@ if ($interactive) {
     exit 1
 }
 
+# Replace all direct calls to . $modulePath with dry-run aware execution
 Write-Host "`n=== Starting Module Execution ===" -ForegroundColor Cyan
+$summary = @()
 foreach ($mod in $toRun) {
     Write-Host "`nRunning module: $mod" -ForegroundColor Yellow
     try {
-        . "$PSScriptRoot\modules\$mod.ps1"
+        $modulePath = Join-Path $PSScriptRoot "modules\$mod.ps1"
+        if (-not (Test-Path $modulePath)) {
+            throw "Module file not found: $modulePath"
+        }
+        if ($dryrun) {
+            Write-Host "[DRY-RUN] Would run module: $mod ($modulePath)" -ForegroundColor DarkYellow
+            Write-Log "[DRY-RUN] Would run module: $mod"
+            $summary += "DRY-RUN: $mod (skipped actual execution)"
+        } else {
+            . $modulePath
+            Write-Log "Module $mod completed"
+            $summary += "Module $mod completed"
+        }
         Write-Host "✓ Module $mod completed" -ForegroundColor Green
     }
     catch {
         Write-Host "✗ Error in module $mod : $_" -ForegroundColor Red
+        Write-Log "ERROR in module $mod : $_"
         Write-Host "Do you want to continue with remaining modules? (Y/N)" -ForegroundColor Yellow
         $response = Read-Host
         if ($response -ne 'Y') {
             Write-Host "Operation cancelled by user." -ForegroundColor Yellow
+            Write-Log "Operation cancelled by user."
             Write-Host "Press any key to exit..."
             $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
             exit 1
@@ -213,6 +283,16 @@ foreach ($mod in $toRun) {
 }
 
 Write-Host "`n=== Operation Complete ===" -ForegroundColor Cyan
+Write-Log "=== Operation Complete ==="
 Write-Host "A system restore point was created before making changes." -ForegroundColor Green
+
+# Summary report
+Write-Host "`nSummary:" -ForegroundColor Cyan
+foreach ($item in $summary) {
+    Write-Host $item -ForegroundColor Gray
+}
+Write-Log "Summary:`n$($summary -join "`n")"
+
+Write-Host "Log file: $logFile" -ForegroundColor Yellow
 Write-Host "Press any key to exit..."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") 
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
