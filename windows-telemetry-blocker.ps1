@@ -1,11 +1,57 @@
+# ===============================
+# Windows Telemetry Blocker
+# Script Version: nextgen-0.1-DB6
+# ===============================
+
+$ScriptVersion = 'nextgen-0.1-DB6'
+
 param(
     [switch]$all,
     [string[]]$modules,
-    [switch]$interactive
+    [switch]$interactive,
+    [switch]$dryrun
 )
 
+# --- Version Banner ---
+$ScriptVersion = 'nextgen-0.1-DB6'
+Write-Host "===============================" -ForegroundColor Cyan
+Write-Host " Windows Telemetry Blocker v$ScriptVersion" -ForegroundColor Cyan
+Write-Host "===============================" -ForegroundColor Cyan
+
+# Enable detailed error reporting
+$ErrorActionPreference = 'Stop'
+$VerbosePreference = 'Continue'
+
+Write-Host "Script started at: $(Get-Date)" -ForegroundColor Yellow
+Write-Host "Running from: $PSScriptRoot" -ForegroundColor Yellow
+Write-Host "================================`n"
+
+# Logging setup
+$logFile = Join-Path $PSScriptRoot "telemetry-blocker.log"
+function Write-Log {
+    param([string]$msg)
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    "$timestamp $msg" | Out-File -FilePath $logFile -Append -Encoding utf8
+}
+
+Write-Log "=== Script started ==="
+
+# Check if modules directory exists
+$modulesDir = Join-Path $PSScriptRoot "modules"
+if (-not (Test-Path $modulesDir)) {
+    Write-Host "Creating modules directory..." -ForegroundColor Yellow
+    try {
+        New-Item -ItemType Directory -Path $modulesDir -Force | Out-Null
+        Write-Host "✓ Modules directory created" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "✗ Failed to create modules directory: $_" -ForegroundColor Red
+        exit 1
+    }
+}
+
 # Function to create a system restore point
-function Create-SystemRestorePoint {
+function New-SystemRestorePoint {
     try {
         Write-Host "`nCreating system restore point..." -ForegroundColor Yellow
         $restorePointName = "Windows Telemetry Blocker - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
@@ -21,62 +67,87 @@ function Create-SystemRestorePoint {
 
 # Function to check Windows version compatibility
 function Test-WindowsVersion {
-    $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem
-    $version = [Version]$osInfo.Version
-    $minVersion = [Version]"10.0.19041" # Windows 10 2004 or later
+    try {
+        $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem
+        $version = [Version]$osInfo.Version
+        $minVersion = [Version]"10.0.19041" # Windows 10 2004 or later
 
-    if ($version -lt $minVersion) {
-        Write-Host "✗ Unsupported Windows version. This script requires Windows 10 2004 or later." -ForegroundColor Red
+        if ($version -lt $minVersion) {
+            Write-Host "✗ Unsupported Windows version. This script requires Windows 10 2004 or later." -ForegroundColor Red
+            return $false
+        }
+        Write-Host "✓ Windows version check passed" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "✗ Failed to check Windows version: $_" -ForegroundColor Red
         return $false
     }
-    Write-Host "✓ Windows version check passed" -ForegroundColor Green
-    return $true
 }
 
 # Function to check PowerShell version
 function Test-PowerShellVersion {
-    $psVersion = $PSVersionTable.PSVersion
-    $minVersion = [Version]"5.1"
+    try {
+        $psVersion = $PSVersionTable.PSVersion
+        $minVersion = [Version]"5.1"
 
-    if ($psVersion -lt $minVersion) {
-        Write-Host "✗ Unsupported PowerShell version. This script requires PowerShell 5.1 or later." -ForegroundColor Red
+        if ($psVersion -lt $minVersion) {
+            Write-Host "✗ Unsupported PowerShell version. This script requires PowerShell 5.1 or later." -ForegroundColor Red
+            return $false
+        }
+        Write-Host "✓ PowerShell version check passed" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "✗ Failed to check PowerShell version: $_" -ForegroundColor Red
         return $false
     }
-    Write-Host "✓ PowerShell version check passed" -ForegroundColor Green
-    return $true
 }
 
 # Function to check for admin privileges
 function Test-AdminPrivileges {
-    $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    if (-not $isAdmin) {
-        Write-Host "✗ This script requires administrative privileges. Please run as administrator." -ForegroundColor Red
+    try {
+        $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        if (-not $isAdmin) {
+            Write-Host "✗ This script requires administrative privileges. Please run as administrator." -ForegroundColor Red
+            return $false
+        }
+        Write-Host "✓ Administrative privileges confirmed" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "✗ Failed to check admin privileges: $_" -ForegroundColor Red
         return $false
     }
-    Write-Host "✓ Administrative privileges confirmed" -ForegroundColor Green
-    return $true
 }
 
-# Function to check for required Windows features
-function Test-RequiredFeatures {
-    $requiredFeatures = @(
-        "Microsoft-Windows-SystemRestore",
-        "Microsoft-Windows-PowerShell"
-    )
-
-    $missingFeatures = @()
-    foreach ($feature in $requiredFeatures) {
-        if (-not (Get-WindowsOptionalFeature -Online -FeatureName $feature -ErrorAction SilentlyContinue)) {
-            $missingFeatures += $feature
-        }
+# Dry-run helper
+function Invoke-IfNotDryRun {
+    param([scriptblock]$Action, [string]$Description)
+    if ($dryrun) {
+        Write-Host "[DRY-RUN] $Description" -ForegroundColor DarkYellow
+        Write-Log "[DRY-RUN] $Description"
+    } else {
+        & $Action
+        Write-Log "$Description"
     }
+}
 
-    if ($missingFeatures.Count -gt 0) {
-        Write-Host "✗ Missing required Windows features: $($missingFeatures -join ', ')" -ForegroundColor Red
-        return $false
+# Pending reboot check
+function Test-PendingReboot {
+    $pending = $false
+    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending") {
+        $pending = $true
     }
-    Write-Host "✓ Required Windows features check passed" -ForegroundColor Green
-    return $true
+    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired") {
+        $pending = $true
+    }
+    return $pending
+}
+
+if (Test-PendingReboot) {
+    Write-Host "⚠️  A system reboot is pending. It's recommended to reboot before running this script." -ForegroundColor Yellow
+    Write-Log "Pending reboot detected."
 }
 
 # Run pre-execution checks
@@ -85,8 +156,7 @@ Write-Host "`n=== Running Pre-Execution Checks ===" -ForegroundColor Cyan
 $checks = @(
     @{ Name = "Windows Version"; Function = { Test-WindowsVersion } },
     @{ Name = "PowerShell Version"; Function = { Test-PowerShellVersion } },
-    @{ Name = "Admin Privileges"; Function = { Test-AdminPrivileges } },
-    @{ Name = "Required Features"; Function = { Test-RequiredFeatures } }
+    @{ Name = "Admin Privileges"; Function = { Test-AdminPrivileges } }
 )
 
 $allChecksPassed = $true
@@ -94,18 +164,14 @@ foreach ($check in $checks) {
     Write-Host "`nChecking $($check.Name)..." -ForegroundColor Yellow
     if (-not (& $check.Function)) {
         $allChecksPassed = $false
+        Write-Host "Press any key to exit..."
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        exit 1
     }
 }
 
-if (-not $allChecksPassed) {
-    Write-Host "`n✗ Pre-execution checks failed. Please resolve the issues above and try again." -ForegroundColor Red
-    Write-Host "Press any key to exit..."
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-    exit 1
-}
-
 # Create system restore point
-if (-not (Create-SystemRestorePoint)) {
+if (-not (New-SystemRestorePoint)) {
     Write-Host "`n✗ Failed to create system restore point. Do you want to continue anyway? (Y/N)" -ForegroundColor Yellow
     $response = Read-Host
     if ($response -ne 'Y') {
@@ -192,27 +258,155 @@ if ($interactive) {
     exit 1
 }
 
+# --- Enhanced complex module execution with dependencies, rollback, and stats ---
+# Dependency map for future expansion
+$moduleDependencies = @{
+    'telemetry' = @()
+    'services' = @('telemetry')
+    'apps' = @()
+    'misc' = @('telemetry','services')
+}
+
+# Advanced logging
+$errorLogFile = Join-Path $PSScriptRoot "telemetry-blocker-errors.log"
+$executionStatsFile = Join-Path $PSScriptRoot "telemetry-blocker-stats.log"
+function Write-Log {
+    param([string]$msg, [switch]$Error)
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $entry = "$timestamp $msg"
+    $entry | Out-File -FilePath $logFile -Append -Encoding utf8
+    if ($Error) {
+        $entry | Out-File -FilePath $errorLogFile -Append -Encoding utf8
+    }
+}
+function Write-Stats {
+    param([string]$msg)
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    "$timestamp $msg" | Out-File -FilePath $executionStatsFile -Append -Encoding utf8
+}
+
+function Resolve-ModuleDependencies {
+    param([string[]]$modules)
+    $resolved = @()
+    foreach ($mod in $modules) {
+        if ($moduleDependencies.ContainsKey($mod)) {
+            foreach ($dep in $moduleDependencies[$mod]) {
+                if ($dep -and ($dep -notin $resolved)) {
+                    $resolved += $dep
+                }
+            }
+        }
+        if ($mod -notin $resolved) { $resolved += $mod }
+    }
+    return $resolved
+}
+
 Write-Host "`n=== Starting Module Execution ===" -ForegroundColor Cyan
-foreach ($mod in $toRun) {
+$summary = @()
+$moduleResults = @{}
+$executedModules = @()
+$rollbackModules = @()
+$startTime = Get-Date
+
+$toRunResolved = Resolve-ModuleDependencies $toRun
+
+foreach ($mod in $toRunResolved) {
     Write-Host "`nRunning module: $mod" -ForegroundColor Yellow
+    $moduleStart = Get-Date
     try {
-        . "$PSScriptRoot\modules\$mod.ps1"
+        $modulePath = Join-Path $PSScriptRoot "modules\$mod.ps1"
+        if (-not (Test-Path $modulePath)) {
+            throw "Module file not found: $modulePath"
+        }
+        $global:dryrun = $dryrun
+        if ($dryrun) {
+            Write-Host "[DRY-RUN] Would run module: $mod ($modulePath)" -ForegroundColor DarkYellow
+            Write-Log "[DRY-RUN] Would run module: $mod"
+            $summary += "DRY-RUN: $mod (skipped actual execution)"
+            $moduleResults[$mod] = @{ Status = 'DRY-RUN'; Start = $moduleStart; End = Get-Date }
+        } else {
+            $result = . $modulePath
+            $executedModules += $mod
+            if ($result -eq $false) {
+                Write-Host "✗ Module $mod reported failure" -ForegroundColor Red
+                Write-Log "Module $mod reported failure" -Error
+                $summary += "Module $mod reported failure"
+                $moduleResults[$mod] = @{ Status = 'Failure'; Start = $moduleStart; End = Get-Date }
+            } else {
+                Write-Log "Module $mod completed"
+                $summary += "Module $mod completed"
+                $moduleResults[$mod] = @{ Status = 'Success'; Start = $moduleStart; End = Get-Date }
+            }
+        }
         Write-Host "✓ Module $mod completed" -ForegroundColor Green
     }
     catch {
         Write-Host "✗ Error in module $mod : $_" -ForegroundColor Red
-        Write-Host "Do you want to continue with remaining modules? (Y/N)" -ForegroundColor Yellow
-        $response = Read-Host
-        if ($response -ne 'Y') {
-            Write-Host "Operation cancelled by user." -ForegroundColor Yellow
-            Write-Host "Press any key to exit..."
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-            exit 1
+        Write-Log "ERROR in module $mod : $_" -Error
+        $summary += "ERROR: $mod : $_"
+        $moduleResults[$mod] = @{ Status = 'Error'; Start = $moduleStart; End = Get-Date; Error = $_ }
+        if ($rollbackOnFailure) {
+            Write-Host "Rolling back changes for executed modules..." -ForegroundColor Red
+            foreach ($rmod in [array]::Reverse($executedModules)) {
+                $rollbackPath = Join-Path $PSScriptRoot "modules\$rmod-rollback.ps1"
+                if (Test-Path $rollbackPath) {
+                    try {
+                        Write-Host "Running rollback for $rmod..." -ForegroundColor Yellow
+                        . $rollbackPath
+                        Write-Log "Rollback for $rmod completed"
+                        $rollbackModules += $rmod
+                    } catch {
+                        Write-Host "✗ Rollback failed for $rmod`: $_" -ForegroundColor Red
+                        Write-Log "Rollback failed for $rmod`: $_" -Error
+                    }
+                } else {
+                    Write-Host "No rollback script for $rmod" -ForegroundColor DarkYellow
+                    Write-Log "No rollback script for $rmod"
+                }
+            }
+            Write-Host "Rollback complete. Exiting." -ForegroundColor Red
+            break
+        } else {
+            Write-Host "Do you want to continue with remaining modules? (Y/N)" -ForegroundColor Yellow
+            $response = Read-Host
+            if ($response -ne 'Y') {
+                Write-Host "Operation cancelled by user." -ForegroundColor Yellow
+                Write-Log "Operation cancelled by user."
+                break
+            }
         }
     }
 }
 
+$endTime = Get-Date
+$duration = $endTime - $startTime
+Write-Stats "Execution started: $startTime"
+Write-Stats "Execution ended: $endTime"
+Write-Stats "Total duration: $($duration.ToString())"
+foreach ($mod in $moduleResults.Keys) {
+    $res = $moduleResults[$mod]
+    Write-Stats "Module: $mod | Status: $($res.Status) | Start: $($res.Start) | End: $($res.End) | Error: $($res.Error)"
+}
+if ($rollbackModules.Count -gt 0) {
+    Write-Stats "Rollback modules: $($rollbackModules -join ', ')"
+}
+
 Write-Host "`n=== Operation Complete ===" -ForegroundColor Cyan
+Write-Log "=== Operation Complete ==="
 Write-Host "A system restore point was created before making changes." -ForegroundColor Green
+
+# Summary report
+Write-Host "`nSummary:" -ForegroundColor Cyan
+foreach ($item in $summary) {
+    Write-Host $item -ForegroundColor Gray
+}
+Write-Log "Summary:`n$($summary -join "`n")"
+
+Write-Host "`nExecution statistics written to: $executionStatsFile" -ForegroundColor Yellow
+Write-Host "Log file: $logFile" -ForegroundColor Yellow
+Write-Host "Error log: $errorLogFile" -ForegroundColor Yellow
+if ($rollbackModules.Count -gt 0) {
+    Write-Host "Rollback modules executed: $($rollbackModules -join ', ')" -ForegroundColor Red
+}
 Write-Host "Press any key to exit..."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") 
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
