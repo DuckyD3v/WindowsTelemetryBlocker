@@ -256,14 +256,22 @@ foreach ($mod in $toRun) {
         if (-not (Test-Path $modulePath)) {
             throw "Module file not found: $modulePath"
         }
+        # Pass dryrun to modules as global variable
+        $global:dryrun = $dryrun
         if ($dryrun) {
             Write-Host "[DRY-RUN] Would run module: $mod ($modulePath)" -ForegroundColor DarkYellow
             Write-Log "[DRY-RUN] Would run module: $mod"
             $summary += "DRY-RUN: $mod (skipped actual execution)"
         } else {
-            . $modulePath
-            Write-Log "Module $mod completed"
-            $summary += "Module $mod completed"
+            $result = . $modulePath
+            if ($result -eq $false) {
+                Write-Host "✗ Module $mod reported failure" -ForegroundColor Red
+                Write-Log "Module $mod reported failure"
+                $summary += "Module $mod reported failure"
+            } else {
+                Write-Log "Module $mod completed"
+                $summary += "Module $mod completed"
+            }
         }
         Write-Host "✓ Module $mod completed" -ForegroundColor Green
     }

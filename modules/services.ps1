@@ -1,4 +1,15 @@
-# Services Module
+# Module: services.ps1
+# Purpose: Disables telemetry and unnecessary services for privacy.
+# Used by: windows-telemetry-blocker.ps1
+
+if (-not $global:dryrun) { $global:dryrun = $false }
+function Write-ModuleLog {
+    param([string]$msg)
+    if (Get-Command Write-Log -ErrorAction SilentlyContinue) {
+        Write-Log $msg
+    }
+}
+
 Write-Host "`nRunning Services Module..." -ForegroundColor Cyan
 
 # List of services to disable
@@ -20,12 +31,21 @@ foreach ($service in $servicesToDisable) {
     if (Get-Service $service -ErrorAction SilentlyContinue) {
         if ($global:dryrun) {
             Write-Host "[DRY-RUN] Would disable service: $service" -ForegroundColor DarkYellow
+            Write-ModuleLog "[DRY-RUN] Would disable service: $service"
         } else {
-            Stop-Service $service -Force -ErrorAction SilentlyContinue
-            Set-Service $service -StartupType Disabled -ErrorAction SilentlyContinue
-            Write-Host "✓ Disabled service: $service" -ForegroundColor Green
+            try {
+                Stop-Service $service -Force -ErrorAction Stop
+                Set-Service $service -StartupType Disabled -ErrorAction Stop
+                Write-Host "✓ Disabled service: $service" -ForegroundColor Green
+                Write-ModuleLog "Disabled service: $service"
+            } catch {
+                Write-Host "✗ Failed to disable service: $service - $_" -ForegroundColor Red
+                Write-ModuleLog "Failed to disable service: $service - $_"
+            }
         }
     }
 }
 
 Write-Host "✓ Services configured" -ForegroundColor Green
+Write-ModuleLog "Services module completed"
+return $true

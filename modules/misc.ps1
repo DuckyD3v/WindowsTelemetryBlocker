@@ -1,9 +1,23 @@
+# Module: misc.ps1
+# Purpose: Applies miscellaneous privacy and anti-telemetry tweaks.
+# Used by: windows-telemetry-blocker.ps1
+
+if (-not $global:dryrun) { $global:dryrun = $false }
+function Write-ModuleLog {
+    param([string]$msg)
+    if (Get-Command Write-Log -ErrorAction SilentlyContinue) {
+        Write-Log $msg
+    }
+}
+
 function Set-RegistryValue {
     param($Path, $Name, $Value, $Type = "DWord")
     if ($global:dryrun) {
         Write-Host "[DRY-RUN] Would set $Path\$Name = $Value ($Type)" -ForegroundColor DarkYellow
+        Write-ModuleLog "[DRY-RUN] Would set $Path\$Name = $Value ($Type)"
     } else {
         Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type
+        Write-ModuleLog "Set $Path\$Name = $Value ($Type)"
     }
 }
 
@@ -18,7 +32,6 @@ Set-RegistryValue "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System" "PublishUse
 Set-RegistryValue "HKCU:\SOFTWARE\Microsoft\Clipboard" "EnableClipboardHistory" 0
 Set-RegistryValue "HKCU:\SOFTWARE\Microsoft\Clipboard" "EnableCloudClipboard" 0
 
-# Misc Module
 Write-Host "`nRunning Misc Module..." -ForegroundColor Cyan
 
 # Disable Windows Tips
@@ -26,8 +39,10 @@ $tipsKey = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManag
 if (-not (Test-Path $tipsKey)) {
     if ($global:dryrun) {
         Write-Host "[DRY-RUN] Would create registry key: $tipsKey" -ForegroundColor DarkYellow
+        Write-ModuleLog "[DRY-RUN] Would create registry key: $tipsKey"
     } else {
         New-Item -Path $tipsKey -Force | Out-Null
+        Write-ModuleLog "Created registry key: $tipsKey"
     }
 }
 Set-RegistryValue $tipsKey "SubscribedContent-338389Enabled" 0
@@ -37,8 +52,10 @@ $timelineKey = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"
 if (-not (Test-Path $timelineKey)) {
     if ($global:dryrun) {
         Write-Host "[DRY-RUN] Would create registry key: $timelineKey" -ForegroundColor DarkYellow
+        Write-ModuleLog "[DRY-RUN] Would create registry key: $timelineKey"
     } else {
         New-Item -Path $timelineKey -Force | Out-Null
+        Write-ModuleLog "Created registry key: $timelineKey"
     }
 }
 Set-RegistryValue $timelineKey "EnableActivityFeed" 0
@@ -50,3 +67,5 @@ Set-RegistryValue "HKCU:\SOFTWARE\Microsoft\InputPersonalization" "RestrictImpli
 Set-RegistryValue "HKCU:\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore" "HarvestContacts" 0
 
 Write-Host "✓ Misc settings configured" -ForegroundColor Green
+Write-ModuleLog "Misc module completed"
+return $true
