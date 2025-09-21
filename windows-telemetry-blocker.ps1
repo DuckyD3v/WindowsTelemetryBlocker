@@ -246,48 +246,137 @@ if ($interactive) {
     exit 1
 }
 
-# Replace all direct calls to . $modulePath with dry-run aware execution
+# --- Enhanced complex module execution with dependencies, rollback, and stats ---
+# Dependency map for future expansion
+$moduleDependencies = @{
+    'telemetry' = @()
+    'services' = @('telemetry')
+    'apps' = @()
+    'misc' = @('telemetry','services')
+}
+
+# Advanced logging
+$errorLogFile = Join-Path $PSScriptRoot "telemetry-blocker-errors.log"
+$executionStatsFile = Join-Path $PSScriptRoot "telemetry-blocker-stats.log"
+function Write-Log {
+    param([string]$msg, [switch]$Error)
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $entry = "$timestamp $msg"
+    $entry | Out-File -FilePath $logFile -Append -Encoding utf8
+    if ($Error) {
+        $entry | Out-File -FilePath $errorLogFile -Append -Encoding utf8
+    }
+}
+function Write-Stats {
+    param([string]$msg)
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    "$timestamp $msg" | Out-File -FilePath $executionStatsFile -Append -Encoding utf8
+}
+
+function Resolve-ModuleDependencies {
+    param([string[]]$modules)
+    $resolved = @()
+    foreach ($mod in $modules) {
+        if ($moduleDependencies.ContainsKey($mod)) {
+            foreach ($dep in $moduleDependencies[$mod]) {
+                if ($dep -and ($dep -notin $resolved)) {
+                    $resolved += $dep
+                }
+            }
+        }
+        if ($mod -notin $resolved) { $resolved += $mod }
+    }
+    return $resolved
+}
+
 Write-Host "`n=== Starting Module Execution ===" -ForegroundColor Cyan
 $summary = @()
-foreach ($mod in $toRun) {
+$moduleResults = @{}
+$executedModules = @()
+$rollbackModules = @()
+$startTime = Get-Date
+
+$toRunResolved = Resolve-ModuleDependencies $toRun
+
+foreach ($mod in $toRunResolved) {
     Write-Host "`nRunning module: $mod" -ForegroundColor Yellow
+    $moduleStart = Get-Date
     try {
         $modulePath = Join-Path $PSScriptRoot "modules\$mod.ps1"
         if (-not (Test-Path $modulePath)) {
             throw "Module file not found: $modulePath"
         }
-        # Pass dryrun to modules as global variable
         $global:dryrun = $dryrun
         if ($dryrun) {
             Write-Host "[DRY-RUN] Would run module: $mod ($modulePath)" -ForegroundColor DarkYellow
             Write-Log "[DRY-RUN] Would run module: $mod"
             $summary += "DRY-RUN: $mod (skipped actual execution)"
+            $moduleResults[$mod] = @{ Status = 'DRY-RUN'; Start = $moduleStart; End = Get-Date }
         } else {
             $result = . $modulePath
+            $executedModules += $mod
             if ($result -eq $false) {
                 Write-Host "✗ Module $mod reported failure" -ForegroundColor Red
-                Write-Log "Module $mod reported failure"
+                Write-Log "Module $mod reported failure" -Error
                 $summary += "Module $mod reported failure"
+                $moduleResults[$mod] = @{ Status = 'Failure'; Start = $moduleStart; End = Get-Date }
             } else {
                 Write-Log "Module $mod completed"
                 $summary += "Module $mod completed"
+                $moduleResults[$mod] = @{ Status = 'Success'; Start = $moduleStart; End = Get-Date }
             }
         }
         Write-Host "✓ Module $mod completed" -ForegroundColor Green
     }
     catch {
         Write-Host "✗ Error in module $mod : $_" -ForegroundColor Red
-        Write-Log "ERROR in module $mod : $_"
-        Write-Host "Do you want to continue with remaining modules? (Y/N)" -ForegroundColor Yellow
-        $response = Read-Host
-        if ($response -ne 'Y') {
-            Write-Host "Operation cancelled by user." -ForegroundColor Yellow
-            Write-Log "Operation cancelled by user."
-            Write-Host "Press any key to exit..."
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-            exit 1
+        Write-Log "ERROR in module $mod : $_" -Error
+        $summary += "ERROR: $mod : $_"
+        $moduleResults[$mod] = @{ Status = 'Error'; Start = $moduleStart; End = Get-Date; Error = $_ }
+        if ($rollbackOnFailure) {
+            Write-Host "Rolling back changes for executed modules..." -ForegroundColor Red
+            foreach ($rmod in [array]::Reverse($executedModules)) {
+                $rollbackPath = Join-Path $PSScriptRoot "modules\$rmod-rollback.ps1"
+                if (Test-Path $rollbackPath) {
+                    try {
+                        Write-Host "Running rollback for $rmod..." -ForegroundColor Yellow
+                        . $rollbackPath
+                        Write-Log "Rollback for $rmod completed"
+                        $rollbackModules += $rmod
+                    } catch {
+                        Write-Host "✗ Rollback failed for $rmod: $_" -ForegroundColor Red
+                        Write-Log "Rollback failed for $rmod: $_" -Error
+                    }
+                } else {
+                    Write-Host "No rollback script for $rmod" -ForegroundColor DarkYellow
+                    Write-Log "No rollback script for $rmod"
+                }
+            }
+            Write-Host "Rollback complete. Exiting." -ForegroundColor Red
+            break
+        } else {
+            Write-Host "Do you want to continue with remaining modules? (Y/N)" -ForegroundColor Yellow
+            $response = Read-Host
+            if ($response -ne 'Y') {
+                Write-Host "Operation cancelled by user." -ForegroundColor Yellow
+                Write-Log "Operation cancelled by user."
+                break
+            }
         }
     }
+}
+
+$endTime = Get-Date
+$duration = $endTime - $startTime
+Write-Stats "Execution started: $startTime"
+Write-Stats "Execution ended: $endTime"
+Write-Stats "Total duration: $($duration.ToString())"
+foreach ($mod in $moduleResults.Keys) {
+    $res = $moduleResults[$mod]
+    Write-Stats "Module: $mod | Status: $($res.Status) | Start: $($res.Start) | End: $($res.End) | Error: $($res.Error)"
+}
+if ($rollbackModules.Count -gt 0) {
+    Write-Stats "Rollback modules: $($rollbackModules -join ', ')"
 }
 
 Write-Host "`n=== Operation Complete ===" -ForegroundColor Cyan
@@ -301,6 +390,11 @@ foreach ($item in $summary) {
 }
 Write-Log "Summary:`n$($summary -join "`n")"
 
+Write-Host "`nExecution statistics written to: $executionStatsFile" -ForegroundColor Yellow
 Write-Host "Log file: $logFile" -ForegroundColor Yellow
+Write-Host "Error log: $errorLogFile" -ForegroundColor Yellow
+if ($rollbackModules.Count -gt 0) {
+    Write-Host "Rollback modules executed: $($rollbackModules -join ', ')" -ForegroundColor Red
+}
 Write-Host "Press any key to exit..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
