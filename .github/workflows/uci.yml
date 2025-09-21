@@ -74,9 +74,9 @@ jobs:
       run: |
         $mainModules = @('services','telemetry','apps','misc')
         foreach ($mod in $mainModules) {
-          $rollback = \"modules/${mod}-rollback.ps1\"
+          $rollback = "modules/$mod-rollback.ps1"
           if (-not (Test-Path $rollback)) {
-            throw \"Missing rollback script: $rollback\"
+            throw "Missing rollback script: $rollback"
           }
         }
 
