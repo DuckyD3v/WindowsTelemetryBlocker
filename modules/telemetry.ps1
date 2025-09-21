@@ -1,4 +1,3 @@
-
 # Module: telemetry.ps1
 # Purpose: Disables Windows telemetry and related privacy-invading features.
 # Used by: windows-telemetry-blocker.ps1

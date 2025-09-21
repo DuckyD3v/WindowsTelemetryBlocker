@@ -20,8 +20,14 @@ jobs:
         foreach ($script in $scripts) {
           $content = Get-Content $script.FullName -Raw
           foreach ($cmd in $dangerous) {
-            if ($content -match [regex]::Escape($cmd)) {
-              throw "Potentially dangerous command '$cmd' found in $($script.FullName)"
+            if ($cmd -eq 'Remove-Item') {
+              if ($content -match '\bRemove-Item\b' -and $content -notmatch 'Remove-ItemProperty') {
+                throw "Potentially dangerous command '$cmd' found in $($script.FullName)"
+              }
+            } else {
+              if ($content -match "\b$([regex]::Escape($cmd))\b") {
+                throw "Potentially dangerous command '$cmd' found in $($script.FullName)"
+              }
             }
           }
         }

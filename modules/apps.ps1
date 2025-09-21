@@ -1,4 +1,3 @@
-
 # Module: apps.ps1
 # Purpose: Removes bloatware and disables unnecessary apps for privacy.
 # Used by: windows-telemetry-blocker.ps1
