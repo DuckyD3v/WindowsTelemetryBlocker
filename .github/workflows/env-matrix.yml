@@ -1,0 +1,52 @@
+description: |
+
+name: Environment Compatibility Matrix
+
+on:
+  push:
+    branches: [ "🌕Nextgen", "📦Current" ]
+  pull_request:
+    branches: [ "🌕Nextgen", "📦Current" ]
+
+jobs:
+  matrix-test:
+    name: Env: ${{ matrix.os }} | Shell: ${{ matrix.shell }} | Admin: ${{ matrix.admin }} | Locale: ${{ matrix.locale }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019, windows-2022]
+        shell: [pwsh, powershell]
+        admin: [true, false]
+        locale: [en-US, de-DE]
+    steps:
+
+
+      - name: Set locale
+        run: |
+          Set-WinSystemLocale ${{ matrix.locale }}
+        shell: powershell
+        continue-on-error: true
+
+      - name: Run as admin (if required)
+        if: ${{ matrix.admin == 'true' }}
+          Start-Process -FilePath ${{ matrix.shell }} -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File windows-telemetry-blocker.ps1 -dryrun' -Verb RunAs
+        shell: powershell
+        continue-on-error: true
+
+      - name: Run as non-admin (if required)
+        if: ${{ matrix.admin == 'false' }}
+        run: |
+          ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File windows-telemetry-blocker.ps1 -dryrun
+        shell: powershell
+        continue-on-error: true
+
+      - name: Upload logs and report
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.os }}-${{ matrix.shell }}-${{ matrix.admin }}-${{ matrix.locale }}
+          path: |
+            telemetry-blocker.log
+            telemetry-blocker-errors.log
+            telemetry-blocker-report.md
+        if-no-files-found: ignore
