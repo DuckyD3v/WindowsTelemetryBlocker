@@ -42,15 +42,29 @@ function Export-RegistryBackup {
 # Only export backup if not dryrun
 if (-not $dryrun) { Export-RegistryBackup }
 
+
 # Logging setup
 $logFile = Join-Path $PSScriptRoot "telemetry-blocker.log"
 function Write-Log {
-    param([string]$msg)
+    param([string]$msg, [switch]$Error)
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    "$timestamp $msg" | Out-File -FilePath $logFile -Append -Encoding utf8
+    $entry = "$timestamp $msg"
+    $entry | Out-File -FilePath $logFile -Append -Encoding utf8
+    if ($Error) {
+        $errorLogFile = Join-Path $PSScriptRoot "telemetry-blocker-errors.log"
+        $entry | Out-File -FilePath $errorLogFile -Append -Encoding utf8
+    }
 }
 
+# Log Windows version and build number at the start
+$osInfo = Get-CimInstance -ClassName Win32_OperatingSystem
+$winVersion = $osInfo.Version
+$winBuild = $osInfo.BuildNumber
 Write-Log "=== Script started ==="
+Write-Log "Windows Version: $winVersion"
+Write-Log "Windows Build: $winBuild"
+Write-Log "Script Version: $ScriptVersion"
+$reportFile = Join-Path $PSScriptRoot "telemetry-blocker-report.md"
 
 # Check if modules directory exists
 $modulesDir = Join-Path $PSScriptRoot "modules"
@@ -394,6 +408,7 @@ foreach ($mod in $toRunResolved) {
     }
 }
 
+
 $endTime = Get-Date
 $duration = $endTime - $startTime
 Write-Stats "Execution started: $startTime"
@@ -424,5 +439,43 @@ Write-Host "Error log: $errorLogFile" -ForegroundColor Yellow
 if ($rollbackModules.Count -gt 0) {
     Write-Host "Rollback modules executed: $($rollbackModules -join ', ')" -ForegroundColor Red
 }
+
+# --- Generate Markdown/HTML Report ---
+$reportContent = @()
+$reportContent += "# Windows Telemetry Blocker - Change Report"
+$reportContent += ""
+$reportContent += "**Date:** $(Get-Date)"
+$reportContent += "**Script Version:** $ScriptVersion"
+$reportContent += "**Windows Version:** $winVersion"
+$reportContent += "**Windows Build:** $winBuild"
+$reportContent += "**Execution Time:** $($duration.ToString())"
+$reportContent += ""
+$reportContent += "## Modules Run"
+foreach ($mod in $moduleResults.Keys) {
+    $res = $moduleResults[$mod]
+    $line = "- $mod: $($res.Status) (Start: $($res.Start), End: $($res.End))"
+    if ($res.Error) { $line += " - Error: $($res.Error)" }
+    $reportContent += $line
+}
+$reportContent += ""
+$reportContent += "## Summary"
+foreach ($item in $summary) {
+    $reportContent += "- $item"
+}
+$reportContent += ""
+if ($rollbackModules.Count -gt 0) {
+    $reportContent += "## Rollback Modules"
+    $reportContent += "- $($rollbackModules -join ', ')"
+}
+$reportContent += ""
+$errors = Get-Content -Path $errorLogFile -ErrorAction SilentlyContinue
+if ($errors -and $errors.Count -gt 0) {
+    $reportContent += "## Errors"
+    foreach ($err in $errors) { $reportContent += "- $err" }
+}
+
+$reportContent | Set-Content -Path $reportFile -Encoding utf8
+
+Write-Host "Report written to: $reportFile" -ForegroundColor Green
 Write-Host "Press any key to exit..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
