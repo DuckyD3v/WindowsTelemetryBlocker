@@ -1,14 +1,10 @@
+
 # Module: apps.ps1
 # Purpose: Removes bloatware and disables unnecessary apps for privacy.
 # Used by: windows-telemetry-blocker.ps1
 
+. "$PSScriptRoot/common.ps1"
 if (-not $global:dryrun) { $global:dryrun = $false }
-function Write-ModuleLog {
-    param([string]$msg)
-    if (Get-Command Write-Log -ErrorAction SilentlyContinue) {
-        Write-Log $msg
-    }
-}
 
 param(
     [switch]$RemoveBloatware

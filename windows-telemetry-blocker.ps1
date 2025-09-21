@@ -5,11 +5,16 @@ param(
     [switch]$dryrun
 )
 
+# --- Version Banner ---
+$ScriptVersion = 'nextgen-0.1-DB6'
+Write-Host "===============================" -ForegroundColor Cyan
+Write-Host " Windows Telemetry Blocker v$ScriptVersion" -ForegroundColor Cyan
+Write-Host "===============================" -ForegroundColor Cyan
+
 # Enable detailed error reporting
 $ErrorActionPreference = 'Stop'
 $VerbosePreference = 'Continue'
 
-Write-Host "`n=== Windows Telemetry Blocker ===" -ForegroundColor Cyan
 Write-Host "Script started at: $(Get-Date)" -ForegroundColor Yellow
 Write-Host "Running from: $PSScriptRoot" -ForegroundColor Yellow
 Write-Host "================================`n"

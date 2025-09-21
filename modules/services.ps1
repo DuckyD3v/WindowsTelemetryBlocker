@@ -1,14 +1,10 @@
+
 # Module: services.ps1
 # Purpose: Disables telemetry and unnecessary services for privacy.
 # Used by: windows-telemetry-blocker.ps1
 
+. "$PSScriptRoot/common.ps1"
 if (-not $global:dryrun) { $global:dryrun = $false }
-function Write-ModuleLog {
-    param([string]$msg)
-    if (Get-Command Write-Log -ErrorAction SilentlyContinue) {
-        Write-Log $msg
-    }
-}
 
 Write-Host "`nRunning Services Module..." -ForegroundColor Cyan
 
