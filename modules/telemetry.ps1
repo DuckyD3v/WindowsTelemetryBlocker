@@ -1,9 +1,9 @@
 # Module: telemetry.ps1
 # Purpose: Disables Windows telemetry and related privacy-invading features.
 # Used by: rls-script.ps1
+
 . "$PSScriptRoot/common.ps1"
 if (-not $global:dryrun) { $global:dryrun = $false }
-}
 
 # Disable Windows Telemetry
 $telemetryKey = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
@@ -17,7 +17,7 @@ if (-not (Test-Path $telemetryKey)) {
     }
 }
 Set-RegistryValue $telemetryKey "AllowTelemetry" 0
-}
+ 
 $insiderKey = "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\System\AllowExperimentation"
 if (-not (Test-Path $insiderKey)) {
     if ($global:dryrun) {
@@ -27,9 +27,8 @@ if (-not (Test-Path $insiderKey)) {
         New-Item -Path $insiderKey -Force | Out-Null
         Write-ModuleLog "Created registry key: $insiderKey"
     }
-}
+
 Set-RegistryValue $insiderKey "value" 0
-}
 Write-ModuleLog "Telemetry settings configured"
 
 # Turn off Feedback prompts
