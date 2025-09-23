@@ -2,9 +2,9 @@ name: Environment Compatibility Matrix
 
 on:
   push:
-    branches: [ "🌕Nextgen", "📦Current" ]
+    branches: ["🌕Nextgen", "📦Current"]
   pull_request:
-    branches: [ "🌕Nextgen", "📦Current" ]
+    branches: ["🌕Nextgen", "📦Current"]
 
 jobs:
   matrix-test:
@@ -16,7 +16,10 @@ jobs:
         os: [windows-2022]
         shell: [pwsh, powershell]
         admin: [true, false]
-        locale: [en-US, de-DE]
+        locale: [
+          en-US, en-GB, de-DE, fr-FR, es-ES, it-IT, ja-JP, ko-KR, zh-CN, zh-TW, ru-RU, pt-BR, pt-PT
+        ]
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -26,6 +29,28 @@ jobs:
           Set-WinSystemLocale ${{ matrix.locale }}
         shell: powershell
         continue-on-error: true
+
+      - name: Check Windows Version
+        run: |
+          Write-Host "Windows version:"
+          Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsHardwareAbstractionLayer
+        shell: powershell
+
+      - name: Check PowerShell Version
+        run: |
+          Write-Host "PowerShell version:"
+          $PSVersionTable
+        shell: powershell
+
+      - name: Check Disk Space
+        run: |
+          Get-PSDrive -PSProvider FileSystem | Select-Object Name, Used, Free, @{Name="FreeGB";Expression={[math]::Round($_.Free/1GB,2)}}
+        shell: powershell
+
+      - name: Check Network Connectivity
+        run: |
+          Test-Connection -ComputerName github.com -Count 3
+        shell: powershell
 
       - name: Run as admin (if required)
         if: ${{ matrix.admin == 'true' }}
