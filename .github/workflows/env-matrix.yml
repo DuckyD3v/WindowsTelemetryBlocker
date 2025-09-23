@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, windows-2022]
+        os: [windows-2022]
         shell: [pwsh, powershell]
         admin: [true, false]
         locale: [en-US, de-DE]
@@ -27,19 +27,17 @@ jobs:
         shell: powershell
         continue-on-error: true
 
-
       - name: Run as admin (if required)
         if: ${{ matrix.admin == 'true' }}
         run: |
-          Start-Process -FilePath ${{ matrix.shell }} -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File rls-script.ps1 -dryrun' -Verb RunAs
+          Start-Process -FilePath ${{ matrix.shell }} -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File windows-telemetry-blocker.ps1 -dryrun' -Verb RunAs
         shell: powershell
         continue-on-error: true
-
 
       - name: Run as non-admin (if required)
         if: ${{ matrix.admin == 'false' }}
         run: |
-          ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File rls-script.ps1 -dryrun
+          ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File windows-telemetry-blocker.ps1 -dryrun
         shell: powershell
         continue-on-error: true
 
