@@ -2,21 +2,25 @@ name: Environment Compatibility Matrix
 
 on:
   push:
-    branches: [ "🌕Nextgen", "📦Current" ]
+    branches: ["🌕Nextgen", "📦Current"]
   pull_request:
-    branches: [ "🌕Nextgen", "📦Current" ]
+    branches: ["🌕Nextgen", "📦Current"]
 
 jobs:
   matrix-test:
+    name: "env: ${{ matrix.os }} | Shell: ${{ matrix.shell }} | Admin: ${{ matrix.admin }} | Locale: ${{ matrix.locale }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, windows-2022]
+        os: [windows-2022]
         shell: [pwsh, powershell]
         admin: [true, false]
-        locale: [en-US, de-DE]
-    name: Env: ${{ matrix.os }} | Shell: ${{ matrix.shell }} | Admin: ${{ matrix.admin }} | Locale: ${{ matrix.locale }}
+        locale: [
+          en-US, en-GB, de-DE, fr-FR, es-ES, it-IT, ja-JP, ko-KR, zh-CN, zh-TW,
+          ru-RU, pt-BR, pt-PT
+        ]
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -27,17 +31,46 @@ jobs:
         shell: powershell
         continue-on-error: true
 
+      # ==== Additional Checks ====
+      - name: Check Windows Version
+        run: |
+          Write-Host "Windows version:"
+          Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsHardwareAbstractionLayer
+        shell: powershell
+
+      - name: Check PowerShell Version
+        run: |
+          Write-Host "PowerShell version:"
+          $PSVersionTable
+        shell: powershell
+
+      - name: Check Disk Space
+        run: |
+          Get-PSDrive -PSProvider FileSystem | Select-Object Name, Used, Free, @{Name="FreeGB";Expression={[math]::Round($_.Free/1GB,2)}}
+        shell: powershell
+
+      - name: Check Network Connectivity
+        run: |
+          try {
+              $response = Invoke-WebRequest -Uri "https://github.com" -UseBasicParsing -TimeoutSec 10
+              Write-Host "Network connectivity OK. Status code: $($response.StatusCode)"
+          } catch {
+              Write-Host "Network connectivity FAILED: $($_.Exception.Message)"
+              exit 1
+          }
+        shell: powershell
+
       - name: Run as admin (if required)
         if: ${{ matrix.admin == 'true' }}
         run: |
-          Start-Process -FilePath ${{ matrix.shell }} -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File windows-telemetry-blocker.ps1 -dryrun' -Verb RunAs
+          Start-Process -FilePath ${{ matrix.shell }} -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File rls-script.ps1 -dryrun' -Verb RunAs
         shell: powershell
         continue-on-error: true
 
       - name: Run as non-admin (if required)
         if: ${{ matrix.admin == 'false' }}
         run: |
-          ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File windows-telemetry-blocker.ps1 -dryrun
+          ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File rls-script.ps1 -dryrun
         shell: powershell
         continue-on-error: true
 
@@ -49,4 +82,3 @@ jobs:
             telemetry-blocker.log
             telemetry-blocker-errors.log
             telemetry-blocker-report.md
-        if-no-files-found: ignore
