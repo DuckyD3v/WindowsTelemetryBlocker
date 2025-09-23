@@ -1,6 +1,6 @@
 # Module: services.ps1
 # Purpose: Disables telemetry and unnecessary services for privacy.
-# Used by: windows-telemetry-blocker.ps1
+# Used by: rls-script.ps1
 . "$PSScriptRoot/common.ps1"
 if (-not $global:dryrun) { $global:dryrun = $false }
 
@@ -21,6 +21,7 @@ $servicesToDisable = @(
     "WerSvc"               # Windows Error Reporting Service
 )
 
+
 foreach ($service in $servicesToDisable) {
     if (Get-Service $service -ErrorAction SilentlyContinue) {
         if ($global:dryrun) {
@@ -32,7 +33,8 @@ foreach ($service in $servicesToDisable) {
                 Set-Service $service -StartupType Disabled -ErrorAction Stop
                 Write-Host "✓ Disabled service: $service" -ForegroundColor Green
                 Write-ModuleLog "Disabled service: $service"
-            } catch {
+            }
+            catch {
                 Write-Host "✗ Failed to disable service: $service - $_" -ForegroundColor Red
                 Write-ModuleLog "Failed to disable service: $service - $_"
             }
