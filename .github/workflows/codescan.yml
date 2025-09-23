@@ -42,7 +42,7 @@ jobs:
           args: >
             -Dsonar.sources=.
             -Dsonar.scanAll=true
-            -Dsonar.externalIssuesReportPaths=codescan.sarif
+            -Dsonar.report.export.path=codescan.sarif
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3
