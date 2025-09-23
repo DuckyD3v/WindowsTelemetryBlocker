@@ -8,6 +8,7 @@ on:
 
 jobs:
   matrix-test:
+    name: "env: ${{ matrix.os }} | Shell: ${{ matrix.shell }} | Admin: ${{ matrix.admin }} | Locale: ${{ matrix.locale }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -16,7 +17,6 @@ jobs:
         shell: [pwsh, powershell]
         admin: [true, false]
         locale: [en-US, de-DE]
-    name: "env: ${{ matrix.os }} | Shell: ${{ matrix.shell }} | Admin: ${{ matrix.admin }} | Locale: ${{ matrix.locale }}"
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
