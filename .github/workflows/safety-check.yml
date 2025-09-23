@@ -1,4 +1,6 @@
 name: Safety & Accuracy Check
+permissions:
+  contents: read
 
 on:
   push:
