@@ -94,7 +94,7 @@ jobs:
     - name: Check Script Version Banner
       shell: pwsh
       run: |
-        $main = Get-Content rls-script.ps1 -Raw
+        $main = Get-Content windows-telemetry-blocker.ps1 -Raw
         if ($main -notmatch 'Script Version:') {
-          throw "Script version banner missing in rls-script.ps1"
+          throw "Script version banner missing in windows-telemetry-blocker.ps1"
         }
