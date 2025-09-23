@@ -11,8 +11,68 @@ param(
     [switch]$Interactive,
     [switch]$DryRun,
     [switch]$WhatIf,
-    [switch]$RollbackOnFailure
+    [switch]$RollbackOnFailure,
+    [switch]$Rollback,
+    [switch]$RestorePoint
 )
+
+# --- Special parameter handling (outside param block) ---
+$handledSpecial = $false
+if ($Rollback) {
+    Write-Host "Starting rollback for all modules..." -ForegroundColor Yellow
+    $rollbackList = @('telemetry','services','apps','misc')
+    foreach ($mod in $rollbackList) {
+        $rollbackPath = Join-Path $PSScriptRoot "modules\${mod}-rollback.ps1"
+        if (Test-Path $rollbackPath) {
+            try {
+                Write-Host ("Running rollback for {0}..." -f $mod) -ForegroundColor Yellow
+                . $rollbackPath
+                Write-Log ("Rollback for {0} completed" -f $mod)
+            } catch {
+                $rbErr = if ($_.Exception) { $_.Exception.Message } else { $_.ToString() }
+                Write-Host ("[ERROR] Rollback failed for {0}: {1}" -f $mod, $rbErr) -ForegroundColor Red
+                Write-Log ("Rollback failed for {0}: {1}" -f $mod, $rbErr) -Error
+            }
+        } else {
+            Write-Host ("No rollback script for {0}" -f $mod) -ForegroundColor DarkYellow
+            Write-Log ("No rollback script for {0}" -f $mod)
+        }
+    }
+    Write-Host "Rollback operation complete." -ForegroundColor Green
+    Write-Log "Rollback operation complete."
+    $handledSpecial = $true
+}
+if ($RestorePoint) {
+    Write-Host "Restoring system via restore point and registry backup..." -ForegroundColor Yellow
+    try {
+        # Attempt system restore (requires admin)
+        Write-Host "Attempting system restore..." -ForegroundColor Yellow
+        # This is a placeholder; actual restore logic may require user interaction or external tools
+        Write-Host "Please use Windows System Restore from Control Panel or Recovery Environment." -ForegroundColor Cyan
+        Write-Log "Restore point operation requested. User should use Windows System Restore."
+        # Optionally, restore registry backup
+        $backupDir = Join-Path $PSScriptRoot "registry-backups"
+        $backups = Get-ChildItem -Path $backupDir -Filter "regbackup_*.reg" | Sort-Object LastWriteTime -Descending
+        if ($backups.Count -gt 0) {
+            $latestBackup = $backups[0].FullName
+            Write-Host ("Latest registry backup: {0}" -f $latestBackup) -ForegroundColor Yellow
+            Write-Host "To restore, run: reg import \"$latestBackup\"" -ForegroundColor Cyan
+            Write-Log ("Registry restore suggested: {0}" -f $latestBackup)
+        } else {
+            Write-Host "No registry backups found." -ForegroundColor Red
+            Write-Log "No registry backups found for restore."
+        }
+    } catch {
+        Write-Host ("[ERROR] Restore operation failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
+        Write-Log ("Restore operation failed: {0}" -f $_.Exception.Message) -Error
+    }
+    $handledSpecial = $true
+}
+if ($handledSpecial) {
+    Write-Host "Press any key to exit..."
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit
+}
 
 $ScriptVersion = 'nextgen-0.8-RLS'
 
@@ -71,9 +131,19 @@ function Export-RegistryBackup {
         $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
         $backupFile = Join-Path $backupDir ("regbackup_{0}.reg" -f $timestamp)
         Write-Host ("Exporting registry backup to {0} ..." -f $backupFile) -ForegroundColor Cyan
-        # Use cmd reg.exe; call via & to ensure proper invocation
-        & reg.exe export "HKLM" $backupFile /y | Out-Null
-        Write-Host "[OK] Registry backup complete." -ForegroundColor Green
+        # Show a simple status bar while reg.exe runs
+        $script:backupJob = Start-Job -ScriptBlock { param($file) reg.exe export "HKLM" $file /y | Out-Null } -ArgumentList $backupFile
+        $status = @('|','/','-','\\')
+        $i = 0
+        while ($backupJob.State -eq 'Running') {
+            Write-Host -NoNewline ("`r[EXPORTING] Please wait " + $status[$i % $status.Length])
+            Start-Sleep -Milliseconds 200
+            $i++
+            $backupJob = Get-Job -Id $backupJob.Id
+        }
+        Receive-Job -Id $backupJob.Id | Out-Null
+        Remove-Job -Id $backupJob.Id | Out-Null
+        Write-Host "`r[OK] Registry backup complete.           " -ForegroundColor Green
         Write-Log ("Registry backup exported to {0}" -f $backupFile)
     } catch {
         $msg = if ($_.Exception) { $_.Exception.Message } else { $_.ToString() }

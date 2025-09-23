@@ -4,8 +4,9 @@
 
 setlocal
 set "SCRIPT_DIR=%~dp0"
-set "PS_SCRIPT=%SCRIPT_DIR%windows-telemetry-blocker.ps1"
-set "PS_RLS_SCRIPT=%SCRIPT_DIR%rls-script.ps1"
+
+set "PS_SCRIPT=%SCRIPT_DIR%rls-script.ps1"
+
 
 :: --- Critical: Check for script existence ---
 if not exist "%PS_SCRIPT%" (
@@ -14,6 +15,7 @@ if not exist "%PS_SCRIPT%" (
     pause
     exit /b 1
 )
+
 
 :: --- Critical: Print script version if available ---
 for /f "tokens=3 delims=' " %%A in ('findstr /C:"$ScriptVersion = '" "%PS_SCRIPT%"') do set SCRIPT_VERSION=%%A
@@ -84,26 +86,32 @@ echo [INFO] Using PowerShell: %PS_EXE%
 :: --- Menu ---
 :menu
 echo Please select an option:
-echo   1. View Latest Report
-echo   2. Restore default telemetry/restore point
-echo   3. Run interactive script
+echo   1. Run Interactive Script (Recommended)
+echo   2. Restore via builtin rollback system
+echo   3. Restore via System Restore Point
 echo   4. Exit
 set /p MENUOPT=Enter your choice [1-4]: 
 
 set "PS_ARGS="
 set "PS_TARGET=%PS_SCRIPT%"
-if "%MENUOPT%"=="1" set "PS_ARGS=-Report"
-if "%MENUOPT%"=="2" set "PS_ARGS=-Restore"
-if "%MENUOPT%"=="3" goto interactive
+if "%MENUOPT%"=="1" (
+    echo [INFO] Launching interactive script in a new PowerShell window...
+    start "TelemetryBlocker-Interactive" %PS_EXE% -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -Interactive
+    exit /b
+)
+if "%MENUOPT%"=="2" set "PS_ARGS=-Rollback"
+if "%MENUOPT%"=="3" set "PS_ARGS=-RestorePoint"
 if "%MENUOPT%"=="4" goto end
 
-:: Only check for invalid selection for options other than 3 and 4
-if not "%MENUOPT%"=="1" if not "%MENUOPT%"=="2" (
+:: Only check for invalid selection for options other than 1-4
+if not "%MENUOPT%"=="1" if not "%MENUOPT%"=="2" if not "%MENUOPT%"=="3" if not "%MENUOPT%"=="4" (
     echo Invalid selection. Please try again.
     echo.
     goto menu
 )
 
+
+:runscript
 :: --- Critical: Check PowerShell version ---
 set "PS_VER_OK=0"
 where pwsh >nul 2>&1
@@ -152,14 +160,16 @@ if "%PS_EXIT%" NEQ "0" (
 )
 echo.
 pause
-goto menu
+    echo.
+    :: Ensure logs are written before exit
+    if exist "%PS_EXE%" (
+        "%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -Command "try { Import-Module '%PS_SCRIPT%' -ErrorAction Stop; if (Get-Command Write-Log -ErrorAction SilentlyContinue) { Write-Log '=== Script ended ===' } } catch { }"
+    )
+    echo Press any key to exit...
+    pause >nul
+    exit /b
 
-:interactive
-set "PS_ARGS=-Interactive"
-set "PS_TARGET=%PS_RLS_SCRIPT%"
-echo [INFO] Launching interactive script...
-"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%PS_TARGET%" %PS_ARGS%
-set "PS_EXIT=%ERRORLEVEL%"
+
 
 if "%PS_VER_OK%" == "0" (
     echo [FATAL] No compatible PowerShell found.
