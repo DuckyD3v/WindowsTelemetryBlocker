@@ -17,7 +17,8 @@ jobs:
         shell: [pwsh, powershell]
         admin: [true, false]
         locale: [
-          en-US, en-GB, de-DE, fr-FR, es-ES, it-IT, ja-JP, ko-KR, zh-CN, zh-TW, ru-RU, pt-BR, pt-PT
+          en-US, en-GB, de-DE, fr-FR, es-ES, it-IT, ja-JP, ko-KR, zh-CN, zh-TW,
+          ru-RU, pt-BR, pt-PT
         ]
 
     steps:
@@ -30,6 +31,7 @@ jobs:
         shell: powershell
         continue-on-error: true
 
+      # ==== Additional Checks ====
       - name: Check Windows Version
         run: |
           Write-Host "Windows version:"
@@ -49,7 +51,13 @@ jobs:
 
       - name: Check Network Connectivity
         run: |
-          Test-Connection -ComputerName github.com -Count 3
+          try {
+              $response = Invoke-WebRequest -Uri "https://github.com" -UseBasicParsing -TimeoutSec 10
+              Write-Host "Network connectivity OK. Status code: $($response.StatusCode)"
+          } catch {
+              Write-Host "Network connectivity FAILED: $($_.Exception.Message)"
+              exit 1
+          }
         shell: powershell
 
       - name: Run as admin (if required)
