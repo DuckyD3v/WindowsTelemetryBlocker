@@ -16,7 +16,7 @@ jobs:
         shell: [pwsh, powershell]
         admin: [true, false]
         locale: [en-US, de-DE]
-    name: Env: ${{ matrix.os }} | Shell: ${{ matrix.shell }} | Admin: ${{ matrix.admin }} | Locale: ${{ matrix.locale }}
+    name: "env: ${{ matrix.os }} | Shell: ${{ matrix.shell }} | Admin: ${{ matrix.admin }} | Locale: ${{ matrix.locale }}"
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -27,17 +27,19 @@ jobs:
         shell: powershell
         continue-on-error: true
 
+
       - name: Run as admin (if required)
         if: ${{ matrix.admin == 'true' }}
         run: |
-          Start-Process -FilePath ${{ matrix.shell }} -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File windows-telemetry-blocker.ps1 -dryrun' -Verb RunAs
+          Start-Process -FilePath ${{ matrix.shell }} -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File rls-script.ps1 -dryrun' -Verb RunAs
         shell: powershell
         continue-on-error: true
+
 
       - name: Run as non-admin (if required)
         if: ${{ matrix.admin == 'false' }}
         run: |
-          ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File windows-telemetry-blocker.ps1 -dryrun
+          ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File rls-script.ps1 -dryrun
         shell: powershell
         continue-on-error: true
 
@@ -49,4 +51,3 @@ jobs:
             telemetry-blocker.log
             telemetry-blocker-errors.log
             telemetry-blocker-report.md
-        if-no-files-found: ignore
