@@ -1,47 +1,43 @@
-# Module: services.ps1
-# Purpose: Disables telemetry and unnecessary services for privacy.
-# Used by: rls-script.ps1
+<# services.ps1 - Disables Windows telemetry and unnecessary services #>
+param()
 . "$PSScriptRoot/common.ps1"
-if (-not $global:dryrun) { $global:dryrun = $false }
 
-Write-Host "`nRunning Services Module..." -ForegroundColor Cyan
-
-# List of services to disable
 $servicesToDisable = @(
-    "DiagTrack",           # Connected User Experiences and Telemetry
-    "dmwappushservice",    # WAP Push Message Routing Service
-    "RemoteRegistry",      # Remote Registry
-    "WSearch",             # Windows Search
-    "MapsBroker",          # Downloaded Maps Manager
-    "XblAuthManager",      # Xbox Live Auth Manager
-    "XblGameSave",         # Xbox Live Game Save
-    "XboxNetApiSvc",       # Xbox Live Networking Service
-    "WMPNetworkSvc",       # Windows Media Player Network Sharing
-    "Fax",                 # Fax Service
-    "WerSvc"               # Windows Error Reporting Service
+    'DiagTrack',
+    'dmwappushservice',
+    'WMPNetworkSvc',
+    'WerSvc',
+    'PcaSvc',
+    'XblGameSave',
+    'MapsBroker',
+    'WSearch'
 )
 
-
-foreach ($service in $servicesToDisable) {
-    if (Get-Service $service -ErrorAction SilentlyContinue) {
-        if ($global:dryrun) {
-            Write-Host "[DRY-RUN] Would disable service: $service" -ForegroundColor DarkYellow
-            Write-ModuleLog "[DRY-RUN] Would disable service: $service"
-        } else {
-            try {
-                Stop-Service $service -Force -ErrorAction Stop
-                Set-Service $service -StartupType Disabled -ErrorAction Stop
-                Write-Host "✓ Disabled service: $service" -ForegroundColor Green
-                Write-ModuleLog "Disabled service: $service"
-            }
-            catch {
-                Write-Host "✗ Failed to disable service: $service - $_" -ForegroundColor Red
-                Write-ModuleLog "Failed to disable service: $service - $_"
-            }
+function Disable-ServiceSafe($serviceName) {
+    Write-ModuleLog "Disabling service: $serviceName"
+    try {
+        $svc = Get-Service -Name $serviceName -ErrorAction Stop
+        if ($svc.Status -ne 'Stopped') {
+            Stop-Service -Name $serviceName -Force -ErrorAction Stop
         }
+        Set-Service -Name $serviceName -StartupType Disabled -ErrorAction Stop
+        Write-ModuleLog "$serviceName disabled."
+        return $true
+    } catch {
+    Write-ModuleLog "Error disabling ${serviceName}: $($_)" 'ERROR'
+        return $false
     }
 }
 
-Write-Host "✓ Services configured" -ForegroundColor Green
-Write-ModuleLog "Services module completed"
-return $true
+Write-ModuleLog "Starting services module..."
+$results = @()
+foreach ($svc in $servicesToDisable) {
+    $results += Disable-ServiceSafe $svc
+}
+if ($results -contains $false) {
+    Write-ModuleLog "Services module completed with errors." 'ERROR'
+    return $false
+} else {
+    Write-ModuleLog "Services module completed successfully."
+    return $true
+}

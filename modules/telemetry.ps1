@@ -1,71 +1,76 @@
 
-# Module: telemetry.ps1
-# Purpose: Disables Windows telemetry and related privacy-invading features.
-# Used by: rls-script.ps1
-
+<# telemetry.ps1 - Disables Windows telemetry, feedback, advertising ID, and Cortana #>
+param()
 . "$PSScriptRoot/common.ps1"
-if (-not $global:dryrun) { $global:dryrun = $false }
 
-# --- Disable Windows Telemetry ---
-$telemetryKey = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
-if (-not (Test-Path $telemetryKey)) {
-    if ($global:dryrun) {
-        Write-Host "[DRY-RUN] Would create registry key: $telemetryKey" -ForegroundColor DarkYellow
-        Write-ModuleLog "[DRY-RUN] Would create registry key: $telemetryKey"
-    } else {
-        New-Item -Path $telemetryKey -Force | Out-Null
-        Write-ModuleLog "Created registry key: $telemetryKey"
+function Disable-Telemetry {
+    Write-ModuleLog "Disabling telemetry..."
+    try {
+        $regPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+        if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+        Set-RegistryValue $regPath 'AllowTelemetry' 0 'DWord'
+        Set-RegistryValue $regPath 'DisableTelemetry' 1 'DWord'
+        Write-ModuleLog "Telemetry disabled."
+        return $true
+    } catch {
+        Write-ModuleLog "Error disabling telemetry: $_" 'ERROR'
+        return $false
     }
 }
-Set-RegistryValue $telemetryKey "AllowTelemetry" 0
 
-# --- Disable Windows Insider Program ---
-$insiderKey = "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\System\AllowExperimentation"
-if (-not (Test-Path $insiderKey)) {
-    if ($global:dryrun) {
-        Write-Host "[DRY-RUN] Would create registry key: $insiderKey" -ForegroundColor DarkYellow
-        Write-ModuleLog "[DRY-RUN] Would create registry key: $insiderKey"
-    } else {
-        New-Item -Path $insiderKey -Force | Out-Null
-        Write-ModuleLog "Created registry key: $insiderKey"
+function Disable-Feedback {
+    Write-ModuleLog "Disabling feedback..."
+    try {
+        $regPath = 'HKCU:\SOFTWARE\Microsoft\Siuf\Rules'
+        if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+        Set-RegistryValue $regPath 'NumberOfSIUFInPeriod' 0 'DWord'
+        Set-RegistryValue $regPath 'PeriodInNanoSeconds' 0 'QWord'
+        Write-ModuleLog "Feedback disabled."
+        return $true
+    } catch {
+        Write-ModuleLog "Error disabling feedback: $_" 'ERROR'
+        return $false
     }
 }
-Set-RegistryValue $insiderKey "value" 0
 
-Write-ModuleLog "Telemetry settings configured"
-
-# --- Turn off Feedback prompts ---
-try {
-    Set-RegistryValue "HKCU:\SOFTWARE\Microsoft\Siuf\Rules" "NumberOfSIUFInPeriod" 0
-    Write-Host "✓ Disabled Feedback prompts" -ForegroundColor Green
-    Write-ModuleLog "Disabled Feedback prompts"
-} catch {
-    Write-Host "✗ Failed to disable Feedback prompts: $_" -ForegroundColor Red
-    Write-ModuleLog "Failed to disable Feedback prompts: $_"
-    throw
+function Disable-AdvertisingID {
+    Write-ModuleLog "Disabling advertising ID..."
+    try {
+        $regPath = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo'
+        if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+        Set-RegistryValue $regPath 'Enabled' 0 'DWord'
+        Write-ModuleLog "Advertising ID disabled."
+        return $true
+    } catch {
+        Write-ModuleLog "Error disabling advertising ID: $_" 'ERROR'
+        return $false
+    }
 }
 
-# --- Disable Advertising ID ---
-try {
-    Set-RegistryValue "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo" "Enabled" 0
-    Write-Host "✓ Disabled Advertising ID" -ForegroundColor Green
-    Write-ModuleLog "Disabled Advertising ID"
-} catch {
-    Write-Host "✗ Failed to disable Advertising ID: $_" -ForegroundColor Red
-    Write-ModuleLog "Failed to disable Advertising ID: $_"
-    throw
+function Disable-Cortana {
+    Write-ModuleLog "Disabling Cortana..."
+    try {
+        $regPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'
+        if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+        Set-RegistryValue $regPath 'AllowCortana' 0 'DWord'
+        Write-ModuleLog "Cortana disabled."
+        return $true
+    } catch {
+        Write-ModuleLog "Error disabling Cortana: $_" 'ERROR'
+        return $false
+    }
 }
 
-# --- Disable Cortana ---
-try {
-    Set-RegistryValue "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search" "AllowCortana" 0
-    Write-Host "✓ Disabled Cortana" -ForegroundColor Green
-    Write-ModuleLog "Disabled Cortana"
-} catch {
-    Write-Host "✗ Failed to disable Cortana: $_" -ForegroundColor Red
-    Write-ModuleLog "Failed to disable Cortana: $_"
-    throw
+Write-ModuleLog "Starting telemetry module..."
+$results = @()
+$results += Disable-Telemetry
+$results += Disable-Feedback
+$results += Disable-AdvertisingID
+$results += Disable-Cortana
+if ($results -contains $false) {
+    Write-ModuleLog "Telemetry module completed with errors." 'ERROR'
+    return $false
+} else {
+    Write-ModuleLog "Telemetry module completed successfully."
+    return $true
 }
-
-Write-ModuleLog "Telemetry module completed"
-return $true
