@@ -46,7 +46,7 @@ jobs:
     - name: Check for Restore Point Creation
       shell: pwsh
       run: |
-        $main = Get-Content rls-script.ps1 -Raw
+        $main = Get-Content windowstelementryblocker.ps1 -Raw
         if ($main -notmatch 'Checkpoint-Computer') {
           throw "Restore point creation (Checkpoint-Computer) missing in main script!"
         }
@@ -54,7 +54,7 @@ jobs:
     - name: Check for Dry-Run Mode
       shell: pwsh
       run: |
-        $main = Get-Content rls-script.ps1 -Raw
+        $main = Get-Content windowstelementryblocker.ps1 -Raw
         if ($main -notmatch 'dryrun') {
           throw "Dry-run mode not found in main script!"
         }
@@ -62,7 +62,7 @@ jobs:
     - name: Check for Logging
       shell: pwsh
       run: |
-        $main = Get-Content rls-script.ps1 -Raw
+        $main = Get-Content windowstelementryblocker.ps1 -Raw
         if ($main -notmatch 'Write-Log') {
           throw "Logging (Write-Log) not found in main script!"
         }
@@ -70,7 +70,7 @@ jobs:
     - name: Check for User Prompts Before Destructive Actions
       shell: pwsh
       run: |
-        $main = Get-Content rls-script.ps1 -Raw
+        $main = Get-Content windowstelementryblocker.ps1 -Raw
         if ($main -notmatch 'Read-Host') {
           Write-Host "[WARNING] No user prompt (Read-Host) found in main script. Ensure destructive actions are confirmed."
         }
