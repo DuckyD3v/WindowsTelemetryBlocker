@@ -1,6 +1,6 @@
 # ===============================
 # Windows Telemetry Blocker
-# Script Version: nextgen-0.8 (pending review)
+# Script Version: 0.8-RefreshedLauncherSystem (Refreshed)
 # ===============================
 
 
@@ -74,7 +74,7 @@ if ($handledSpecial) {
     exit
 }
 
-$ScriptVersion = 'nextgen-0.9'
+$ScriptVersion = '0.8-RLS'
 
 # --- Banner ---
 Write-Host "===============================" -ForegroundColor Cyan
