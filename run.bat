@@ -5,7 +5,7 @@
 setlocal
 set "SCRIPT_DIR=%~dp0"
 
-set "PS_SCRIPT=%SCRIPT_DIR%rls-script.ps1"
+set "PS_SCRIPT=%SCRIPT_DIR%windowstelementryblocker.ps1"
 
 
 :: --- Critical: Check for script existence ---

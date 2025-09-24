@@ -1,6 +1,6 @@
 # Module: apps.ps1
 # Purpose: Removes bloatware and disables unnecessary apps for privacy.
-# Used by: rls-script.ps1
+# Used by: windowstelementryblocker.ps1
 . "$PSScriptRoot/common.ps1"
 if (-not $global:dryrun) { $global:dryrun = $false }
 
