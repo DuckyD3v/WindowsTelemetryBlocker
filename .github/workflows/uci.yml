@@ -96,7 +96,7 @@ jobs:
     - name: Check Script Version Banner
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content rls-script.ps1 -Raw
         if ($main -notmatch 'Script Version:') {
-          throw "Script version banner missing in windowstelementryblocker.ps1"
+          throw "Script version banner missing in rls-script.ps1"
         }
