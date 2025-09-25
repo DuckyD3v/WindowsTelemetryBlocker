@@ -89,22 +89,30 @@ echo Please select an option:
 echo   1. Run Interactive Script (Recommended)
 echo   2. Restore via builtin rollback system
 echo   3. Restore via System Restore Point
-echo   4. Exit
-set /p MENUOPT=Enter your choice [1-4]: 
+echo   4. Update Script (Recommended after multiple runs)
+echo   5. Exit
+set /p MENUOPT=Enter your choice [1-5]:
 
 set "PS_ARGS="
 set "PS_TARGET=%PS_SCRIPT%"
 if "%MENUOPT%"=="1" (
     echo [INFO] Launching interactive script in a new PowerShell window...
-    start "TelemetryBlocker-Interactive" %PS_EXE% -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -Interactive
+    start "TelemetryBlocker-Interactive" %PS_EXE% -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -Interactive -EnableAuditLog
     exit /b
 )
 if "%MENUOPT%"=="2" set "PS_ARGS=-Rollback"
 if "%MENUOPT%"=="3" set "PS_ARGS=-RestorePoint"
-if "%MENUOPT%"=="4" goto end
+if "%MENUOPT%"=="4" (
+    echo [INFO] Launching script update check...
+    %PS_EXE% -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -Update
+    echo.
+    pause
+    goto menu
+)
+if "%MENUOPT%"=="5" goto end
 
-:: Only check for invalid selection for options other than 1-4
-if not "%MENUOPT%"=="1" if not "%MENUOPT%"=="2" if not "%MENUOPT%"=="3" if not "%MENUOPT%"=="4" (
+:: Only check for invalid selection for options other than 1-5
+if not "%MENUOPT%"=="1" if not "%MENUOPT%"=="2" if not "%MENUOPT%"=="3" if not "%MENUOPT%"=="4" if not "%MENUOPT%"=="5" (
     echo Invalid selection. Please try again.
     echo.
     goto menu
