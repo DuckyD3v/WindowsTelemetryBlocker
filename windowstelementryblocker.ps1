@@ -1,6 +1,6 @@
 # ===============================
 # Windows Telemetry Blocker
-# Script Version: nextgen-0.8 (pending review)
+# Script Version: nextgen-0.9 (pending)
 # ===============================
 
 
@@ -13,7 +13,9 @@ param(
     [switch]$WhatIf,
     [switch]$RollbackOnFailure,
     [switch]$Rollback,
-    [switch]$RestorePoint
+    [switch]$RestorePoint,
+    [switch]$Update,
+    [switch]$EnableAuditLog
 )
 
 # --- Special parameter handling (outside param block) ---
@@ -81,6 +83,14 @@ Write-Host "===============================" -ForegroundColor Cyan
 Write-Host (" Windows Telemetry Blocker v{0}" -f $ScriptVersion) -ForegroundColor Cyan
 Write-Host "===============================" -ForegroundColor Cyan
 
+# Check for updates if requested
+if ($Update) {
+    Write-Host "Update requested. Checking for updates..." -ForegroundColor Yellow
+    Update-Script
+    Write-Host "Update check complete." -ForegroundColor Green
+    Write-AuditLog "Script update check performed"
+}
+
 # Fail fast for unhandled errors in scripts we call; we'll handle expected errors with try/catch
 $ErrorActionPreference = 'Stop'
 $VerbosePreference = 'Continue'
@@ -95,6 +105,7 @@ $errorLogFile       = Join-Path $PSScriptRoot "telemetry-blocker-errors.log"
 $executionStatsFile = Join-Path $PSScriptRoot "telemetry-blocker-stats.log"
 $reportFile         = Join-Path $PSScriptRoot "telemetry-blocker-report.md"
 $modulesDir         = Join-Path $PSScriptRoot "modules"
+$GitHubRepo         = "https://github.com/N0tHorizon/WindowsTelemetryBlocker"
 
 # ==== Logging helpers (single authoritative definitions) ====
 function Write-Log {
@@ -119,6 +130,66 @@ function Write-Stats {
         "$timestamp $msg" | Out-File -FilePath $executionStatsFile -Append -Encoding utf8 -ErrorAction Stop
     } catch {
         Write-Log ("Failed to write stats: {0}" -f $_.Exception.Message) -Error
+    }
+}
+
+# ==== New Feature Functions ====
+function Update-Script {
+    Write-Host "Fetching latest version from GitHub..." -ForegroundColor Yellow
+    try {
+        # Download the main script
+        $mainUrl = "$GitHubRepo/raw/main/windowstelementryblocker.ps1"
+        $tempMain = Join-Path $PSScriptRoot "temp_main.ps1"
+        Invoke-WebRequest -Uri $mainUrl -OutFile $tempMain -ErrorAction Stop
+
+        # Download modules
+        $apiUrl = "$GitHubRepo/contents/modules"
+        $response = Invoke-WebRequest -Uri $apiUrl -Headers @{ "Accept" = "application/vnd.github.v3+json" } -ErrorAction Stop
+        $files = $response.Content | ConvertFrom-Json
+
+        foreach ($file in $files) {
+            if ($file.name -like "*.ps1") {
+                $fileUrl = $file.download_url
+                $tempFile = Join-Path $PSScriptRoot ("temp_{0}" -f $file.name)
+                Invoke-WebRequest -Uri $fileUrl -OutFile $tempFile -ErrorAction Stop
+            }
+        }
+
+        # Confirm
+        $confirm = Read-Host "Downloaded updates. Overwrite files? (Y/N)"
+        if ($confirm -eq 'Y') {
+            # Overwrite
+            Move-Item $tempMain (Join-Path $PSScriptRoot "windowstelementryblocker.ps1") -Force -ErrorAction Stop
+            foreach ($file in $files) {
+                if ($file.name -like "*.ps1") {
+                    $tempFile = Join-Path $PSScriptRoot ("temp_{0}" -f $file.name)
+                    $dest = Join-Path $modulesDir $file.name
+                    Move-Item $tempFile $dest -Force -ErrorAction Stop
+                }
+            }
+            Write-Host "Update complete." -ForegroundColor Green
+        } else {
+            Write-Host "Update cancelled." -ForegroundColor Yellow
+            # Clean temp
+            Remove-Item (Join-Path $PSScriptRoot "temp_*") -Force -ErrorAction SilentlyContinue
+        }
+    } catch {
+        Write-Host ("[ERROR] Update failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
+        # Clean temp
+        Remove-Item (Join-Path $PSScriptRoot "temp_*") -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Write-AuditLog {
+    param([string]$Message, [string]$EventType = "Information")
+    if (-not $EnableAuditLog) { return }
+    try {
+        if (-not (Get-EventLog -LogName Application -Source "TelemetryBlocker" -ErrorAction SilentlyContinue)) {
+            New-EventLog -LogName Application -Source "TelemetryBlocker" -ErrorAction Stop
+        }
+        Write-EventLog -LogName Application -Source "TelemetryBlocker" -EventId 1000 -EntryType $EventType -Message $Message -ErrorAction Stop
+    } catch {
+        Write-Log ("Failed to write audit log: {0}" -f $_.Exception.Message) -Error
     }
 }
 
@@ -169,6 +240,7 @@ Write-Log "=== Script started ==="
 Write-Log ("Windows Version: {0}" -f $winVersion)
 Write-Log ("Windows Build: {0}" -f $winBuild)
 Write-Log ("Script Version: {0}" -f $ScriptVersion)
+Write-AuditLog ("Script started - Version {0}, Windows {1} Build {2}" -f $ScriptVersion, $winVersion, $winBuild)
 
 # ==== Ensure modules directory exists ====
 if (-not (Test-Path $modulesDir)) {
@@ -183,6 +255,14 @@ if (-not (Test-Path $modulesDir)) {
         exit 1
     }
 }
+
+# ==== Rollback coverage scan ====
+$rollbackCoverage = @{}
+foreach ($mod in $moduleList) {
+    $rollbackPath = Join-Path $modulesDir ("{0}-rollback.ps1" -f $mod)
+    $rollbackCoverage[$mod] = Test-Path $rollbackPath
+}
+Write-Log ("Rollback coverage: {0}" -f (($rollbackCoverage.GetEnumerator() | ForEach-Object { "$($_.Key):$($_.Value)" }) -join ', '))
 
 # ==== System helpers ====
 function New-SystemRestorePoint {
@@ -402,6 +482,8 @@ function Resolve-ModuleDependencies {
     return $resolved
 }
 
+
+
 # ==== Module execution loop ====
 Write-Host "`n=== Starting Module Execution ===" -ForegroundColor Cyan
 $summary = @()
@@ -414,6 +496,7 @@ $toRunResolved = Resolve-ModuleDependencies -mods $toRun
 
 foreach ($mod in $toRunResolved) {
     Write-Host ("`nRunning module: {0}" -f $mod) -ForegroundColor Yellow
+    Write-AuditLog ("Starting module execution: {0}" -f $mod)
     $moduleStart = Get-Date
     try {
         $modulePath = Join-Path $modulesDir ("{0}.ps1" -f $mod)
@@ -431,10 +514,12 @@ foreach ($mod in $toRunResolved) {
             if ($result -eq $false) {
                 Write-Host ("[ERROR] Module {0} reported failure" -f $mod) -ForegroundColor Red
                 Write-Log ("Module {0} reported failure" -f $mod) -Error
+                Write-AuditLog ("Module {0} execution failed" -f $mod) "Warning"
                 $summary += ("Module {0} reported failure" -f $mod)
                 $moduleResults[$mod] = @{ Status='Failure'; Start=$moduleStart; End=(Get-Date) }
             } else {
                 Write-Log ("Module {0} completed" -f $mod)
+                Write-AuditLog ("Module {0} execution completed successfully" -f $mod)
                 $summary += ("Module {0} completed" -f $mod)
                 $moduleResults[$mod] = @{ Status='Success'; Start=$moduleStart; End=(Get-Date) }
             }
@@ -450,6 +535,7 @@ foreach ($mod in $toRunResolved) {
         if ($RollbackOnFailure) {
             Write-Host "Rolling back changes for executed modules..." -ForegroundColor Red
             Write-Log ("Rollback initiated due to failure in module {0}" -f $mod)
+            Write-AuditLog ("Rollback initiated due to failure in module {0}" -f $mod) "Warning"
 
             # clone and reverse executedModules safely
             $executedClone = @()
@@ -463,20 +549,24 @@ foreach ($mod in $toRunResolved) {
                         Write-Host ("Running rollback for {0}..." -f $rmod) -ForegroundColor Yellow
                         . $rollbackPath
                         Write-Log ("Rollback for {0} completed" -f $rmod)
+                        Write-AuditLog ("Rollback for {0} completed" -f $rmod)
                         $rollbackModules += $rmod
                     } catch {
                         $rbErr = if ($_.Exception) { $_.Exception.Message } else { $_.ToString() }
                         Write-Host ("[ERROR] Rollback failed for {0}: {1}" -f $rmod, $rbErr) -ForegroundColor Red
                         Write-Log ("Rollback failed for {0}: {1}" -f $rmod, $rbErr) -Error
+                        Write-AuditLog ("Rollback failed for {0}: {1}" -f $rmod, $rbErr) "Error"
                     }
                 } else {
                     Write-Host ("No rollback script for {0}" -f $rmod) -ForegroundColor DarkYellow
                     Write-Log ("No rollback script for {0}" -f $rmod)
+                    Write-AuditLog ("No rollback script for {0}" -f $rmod) "Warning"
                 }
             }
 
             Write-Host "Rollback complete. Exiting." -ForegroundColor Red
             Write-Log "Rollback complete. Exiting."
+            Write-AuditLog "Rollback complete. Exiting."
             break
         } else {
             $response = Read-Host "Do you want to continue with remaining modules? (Y/N)"

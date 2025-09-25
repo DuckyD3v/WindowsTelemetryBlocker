@@ -24,6 +24,9 @@ A lightweight, open-source toolkit to disable Windows telemetry and improve priv
 - ⏪ Rollback support for most modules
 - 💾 System restore point creation
 - 🖥️ Interactive and batch modes
+- 📊 Audit logging to Windows Event Log
+- 🔄 Script update checker
+- 🛡️ Integrity checking for modules (file size and modification time)
 
 ## 🚀 Quick Start
 
@@ -38,21 +41,6 @@ A lightweight, open-source toolkit to disable Windows telemetry and improve priv
 ### Interactive Mode (Recommended)
 ```powershell
 .\run.bat
-```
-
-### Command Line Options
-```powershell
-# Run all modules
-.\windows-telemetry-blocker.ps1 -all
-
-# Run specific modules
-.\windows-telemetry-blocker.ps1 -modules telemetry,services
-
-# Interactive mode
-.\windows-telemetry-blocker.ps1 -interactive
-
-# Advanced options
-powershell -ExecutionPolicy Bypass -File windows-telemetry-blocker.ps1 -all -dryrun -verbose -rollbackOnFailure
 ```
 
 ## 🧩 Modules
