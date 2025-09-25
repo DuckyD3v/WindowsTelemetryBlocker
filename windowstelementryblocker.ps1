@@ -14,7 +14,6 @@ param(
     [switch]$RollbackOnFailure,
     [switch]$Rollback,
     [switch]$RestorePoint,
-
     [switch]$Update,
     [switch]$EnableAuditLog
 )
