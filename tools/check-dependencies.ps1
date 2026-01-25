@@ -16,7 +16,7 @@ Write-Host "Checking module dependencies and structure..." -ForegroundColor Cyan
 Write-Host ""
 
 # Check main script for module list
-$main = Get-Content windowstelementryblocker.ps1 -Raw
+$main = Get-Content windowstelemetryblocker.ps1 -Raw
 if ($main -match '\$moduleList\s*=\s*@\(([^)]+)\)') {
     $moduleList = $matches[1] -split ',' | ForEach-Object { $_.Trim().Replace("'", "").Replace('"', '') }
     Write-Host "Found modules in main script: $($moduleList -join ', ')" -ForegroundColor Green

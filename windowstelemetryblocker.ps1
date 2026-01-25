@@ -357,7 +357,7 @@ function Update-Script {
         $confirm = Read-Host "Downloaded updates. Overwrite files? (Y/N)"
         if ($confirm -eq 'Y') {
             # Overwrite
-            Move-Item $tempMain (Join-Path $PSScriptRoot "windowstelementryblocker.ps1") -Force -ErrorAction Stop
+            Move-Item $tempMain (Join-Path $PSScriptRoot "windowstelemetryblocker.ps1") -Force -ErrorAction Stop
             foreach ($file in $files) {
                 if ($file.name -like "*.ps1") {
                     $tempFile = Join-Path $PSScriptRoot ("temp_{0}" -f $file.name)

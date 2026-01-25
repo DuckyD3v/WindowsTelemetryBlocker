@@ -41,7 +41,7 @@ jobs:
         
         # Check for changes to critical files
         $criticalFiles = @(
-          'windowstelementryblocker.ps1',
+          'windowstelemetryblocker.ps1',
           'modules/common.ps1',
           'run.bat'
         )

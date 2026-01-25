@@ -69,7 +69,7 @@ jobs:
     - name: Check for Restore Point Creation
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content windowstelemetryblocker.ps1 -Raw
         if ($main -notmatch 'Checkpoint-Computer|New-SystemRestorePoint') {
           throw "Restore point creation missing in main script!"
         }
@@ -78,7 +78,7 @@ jobs:
     - name: Check for Dry-Run Mode
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content windowstelemetryblocker.ps1 -Raw
         if ($main -notmatch 'dryrun|DryRun') {
           throw "Dry-run mode not found in main script!"
         }
@@ -87,7 +87,7 @@ jobs:
     - name: Check for Logging
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content windowstelemetryblocker.ps1 -Raw
         if ($main -notmatch 'Write-Log') {
           throw "Logging (Write-Log) not found in main script!"
         }
@@ -96,7 +96,7 @@ jobs:
     - name: Check for User Prompts Before Destructive Actions
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content windowstelemetryblocker.ps1 -Raw
         $hasPrompts = $main -match 'Read-Host|Confirm'
         if (-not $hasPrompts) {
           Write-Host "[WARN] No user prompts found in main script. Ensure destructive actions are confirmed."
@@ -139,7 +139,7 @@ jobs:
     - name: Check for Error Handling
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content windowstelemetryblocker.ps1 -Raw
         $errorHandling = @('try\s*\{', 'catch\s*\{', 'trap\s*\{')
         $found = 0
         foreach ($pattern in $errorHandling) {
@@ -155,7 +155,7 @@ jobs:
     - name: Check for Registry Backup
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content windowstelemetryblocker.ps1 -Raw
         if ($main -notmatch 'Export-RegistryBackup|registry.*backup') {
           throw "Registry backup functionality missing!"
         }

@@ -63,14 +63,14 @@ jobs:
       - name: Run as admin (if required)
         if: ${{ matrix.admin == 'true' }}
         run: |
-          Start-Process -FilePath ${{ matrix.shell }} -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File windowstelementryblocker.ps1 -DryRun -Modules telemetry' -Verb RunAs -Wait
+          Start-Process -FilePath ${{ matrix.shell }} -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File windowstelemetryblocker.ps1 -DryRun -Modules telemetry' -Verb RunAs -Wait
         shell: powershell
         continue-on-error: true
 
       - name: Run as non-admin (if required)
         if: ${{ matrix.admin == 'false' }}
         run: |
-          ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File windowstelementryblocker.ps1 -DryRun -Modules telemetry
+          ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File windowstelemetryblocker.ps1 -DryRun -Modules telemetry
         shell: powershell
         continue-on-error: true
 

@@ -55,7 +55,7 @@ jobs:
       shell: pwsh
       run: |
         $required = @(
-          'windowstelementryblocker.ps1',
+          'windowstelemetryblocker.ps1',
           'run.bat',
           'modules/common.ps1',
           'modules/telemetry.ps1',
@@ -114,7 +114,7 @@ jobs:
     - name: Check Code Organization (Regions)
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content windowstelemetryblocker.ps1 -Raw
         $requiredRegions = @(
           'region Parameters',
           'region Global State',
@@ -167,9 +167,9 @@ jobs:
     - name: Check Script Version Banner
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content windowstelemetryblocker.ps1 -Raw
         if ($main -notmatch 'Script Version:') {
-          throw "Script version banner missing in windowstelementryblocker.ps1"
+          throw "Script version banner missing in windowstelemetryblocker.ps1"
         }
         Write-Host "[OK] Script version banner present"
     
@@ -191,7 +191,7 @@ jobs:
     - name: Validate Parameter Block Position
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content windowstelemetryblocker.ps1 -Raw
         $lines = $main -split "`n"
         $paramFound = $false
         $codeBeforeParam = $false

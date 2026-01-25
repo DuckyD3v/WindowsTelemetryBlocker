@@ -14,7 +14,7 @@ REM ============================================================================
 set "SCRIPT_DIR=%~dp0"
 set "LAUNCHER_VERSION=1.5"
 set "LOG_FILE=%SCRIPT_DIR%telemetry-blocker.log"
-set "PS_SCRIPT=%SCRIPT_DIR%windowstelementryblocker.ps1"
+set "PS_SCRIPT=%SCRIPT_DIR%windowstelemetryblocker.ps1"
 set "SAFETY_LOG=%SCRIPT_DIR%telemetry-blocker-safety.log"
 set "LAST_EXECUTION_STATE=%SCRIPT_DIR%.last-execution-state"
 set "V1_LAUNCHER=%SCRIPT_DIR%v1.0\launcher.ps1"

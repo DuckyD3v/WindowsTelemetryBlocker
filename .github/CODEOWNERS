@@ -2,7 +2,7 @@
 # This file defines code ownership for automatic PR review requests
 
 # Core scripts
-windowstelementryblocker.ps1 @N0tHorizon
+windowstelemetryblocker.ps1 @N0tHorizon
 run.bat @N0tHorizon
 
 # Modules
