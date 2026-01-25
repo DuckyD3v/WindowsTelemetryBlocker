@@ -5,191 +5,156 @@
 [![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-blue)](https://www.microsoft.com/windows)
 [![Issues](https://img.shields.io/github/issues/N0tHorizon/WindowsTelemetryBlocker)](https://github.com/N0tHorizon/WindowsTelemetryBlocker/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/N0tHorizon/WindowsTelemetryBlocker)](https://github.com/N0tHorizon/WindowsTelemetryBlocker/pulls)
-[![Last Commit](https://img.shields.io/github/last-commit/N0tHorizon/WindowsTelemetryBlocker)](https://github.com/N0tHorizon/WindowsTelemetryBlocker/commits/main)
 
-A comprehensive, open-source toolkit to disable Windows telemetry and enhance privacy on Windows 10 and 11. Built with PowerShell, fully transparent, modular, and scriptable. Includes GUI, scheduling, monitoring, and advanced filtering capabilities.
-
-## Features
-
-- **Disable Windows Telemetry** - Blocks data collection and reporting to Microsoft
-- **Block Feedback & Advertising** - Prevents feedback prompts and advertising ID usage
-- **Stop Unnecessary Services** - Disables telemetry-related services like DiagTrack, Xbox services, etc.
-- **Remove Bloatware** - Optionally removes pre-installed apps and disables background apps
-- **Interactive Module Selection** - Choose which modules to run via CLI or GUI-like menu
-- **Modern GUI** - Windows Forms-based interface with tabbed navigation
-- **Data Binding** - Real-time synchronization between UI and configuration
-- **Task Scheduling** - Schedule automated telemetry blocking with 6 schedule types
-- **Advanced Filtering** - Regex-based filtering system with custom rules
-- **Real-time Monitoring** - Registry and service change detection with alerts
-- **Dashboard** - Monitoring dashboard with statistics and notifications
-- **Easy Rollback** - Revert changes with dedicated rollback scripts
-- **Advanced Logging** - Comprehensive logs, error tracking, and statistics
-- **Modular Design** - 4 core modules with clear dependencies
-- **System Restore Points** - Automatic creation before changes for safety
-- **Multiple Execution Modes** - Interactive, batch, dry-run, and custom profiles
-- **Audit Logging** - Logs to Windows Event Viewer for compliance
-- **Auto-Update** - Fetch latest versions from GitHub
-- **Integrity Checks** - Verifies script and module integrity
-- **Detailed Reports** - Markdown reports of changes and execution results
-
-## Quick Start
-
-1. **Download**: Clone or download the repository.
-2. **Run as Administrator**: Right-click `run.bat` and select "Run as administrator".
-3. **Choose Mode**:
-   - **Option 1**: v1.0 GUI Launcher (if available) - Modern interface with monitoring and scheduling
-   - **Option 2**: v0.9 Interactive Script - Classic interactive telemetry blocker with module selection
-   - **Option 3**: Rollback - Undo recent changes
-   - **Option 4**: System Restore - Use Windows System Restore point
-4. **Review Logs**: Check `telemetry-blocker.log` and `telemetry-blocker-report.md` for results.
-
-### Prerequisites
-- Windows 10 version 2004 or later / Windows 11.
-- PowerShell 5.1 or later (PowerShell Core recommended).
-- Administrative privileges.
-
-The launcher (`run.bat`) will automatically check for prerequisites and attempt self-healing if files are missing.
-
-### PowerShell Script (windowstelementryblocker.ps1)
-
-Run directly with parameters:
-
-```powershell
-.\windowstelementryblocker.ps1 -All -EnableAuditLog
-```
-## Usage
-
-#### Module Dependencies
-
-- `telemetry`: No dependencies
-- `services`: Depends on `telemetry`
-- `apps`: No dependencies
-- `misc`: Depends on `telemetry` and `services`
-
-Dependencies are resolved automatically.
-
-## Modules
-
-| Module | Description | Rollback Available |
-|--------|-------------|-------------------|
-| **telemetry.ps1** | Disables Windows Telemetry, feedback prompts, advertising ID, and Cortana via registry settings. | ✅ |
-| **services.ps1** | Disables telemetry services: DiagTrack, dmwappushservice, WMPNetworkSvc, WerSvc, PcaSvc, Xbox services, MapsBroker, WSearch. | ✅ |
-| **apps.ps1** | Disables background apps, removes bloatware (optional), disables Widgets/News/OneDrive auto-launch, removes pre-installed apps like Bing Weather, Xbox apps, etc. | ❌ (Manual) |
-| **misc.ps1** | Disables Customer Experience Improvement Program (CEIP) and Windows Error Reporting. | ✅ |
-
-### Module Details
-
-#### Telemetry Module
-- Sets `AllowTelemetry` to 0 and `DisableTelemetry` to 1 in `HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection`
-- Disables feedback in `HKCU:\SOFTWARE\Microsoft\Siuf\Rules`
-- Disables advertising ID in `HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo`
-- Disables Cortana in `HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search`
-
-#### Services Module
-Disables and stops the following services:
-- DiagTrack (Connected User Experiences and Telemetry)
-- dmwappushservice (Device Management Wireless Application Protocol)
-- WMPNetworkSvc (Windows Media Player Network Sharing)
-- WerSvc (Windows Error Reporting)
-- PcaSvc (Program Compatibility Assistant)
-- Xbox-related services (XblGameSave, MapsBroker)
-- WSearch (Windows Search)
-
-#### Apps Module
-- Disables background apps globally
-- Removes apps like Microsoft.BingWeather, Microsoft.GetHelp, Microsoft.WindowsFeedbackHub, Xbox apps, etc.
-- Disables taskbar icons for Widgets, News, OneDrive
-
-#### Misc Module
-- Disables CEIP in `HKLM:\SOFTWARE\Microsoft\SQMClient\Windows`
-- Disables Windows Error Reporting in `HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting`
-
-## Rollback
-
-Rollback scripts are available for most modules in `modules/*-rollback.ps1`.
-
-### Using Rollback
-- Via Launcher: Option 3 "Rollback (Undo recent changes)"
-- Via Script: `.\windowstelementryblocker.ps1 -Rollback`
-- Individual: Run specific rollback script, e.g., `.\modules\telemetry-rollback.ps1`
-
-### Rollback Coverage
-- **Telemetry**: Removes AllowTelemetry registry value.
-- **Services**: Sets disabled services back to Manual startup.
-- **Apps**: No automatic rollback (app removals are irreversible; reinstall manually).
-- **Misc**: Removes Timeline-related registry values.
-
-Registry backups are created in `registry-backups/` before changes.
-
-## Logging and Reports
-
-### Log Files
-- `telemetry-blocker.log`: Main execution log with timestamps.
-- `telemetry-blocker-errors.log`: Error messages only.
-- `telemetry-blocker-stats.log`: Execution statistics (start/end times, durations).
-- `telemetry-blocker-report.md`: Detailed Markdown report of changes.
-
-### Audit Logging
-With `-EnableAuditLog`, events are logged to Windows Event Viewer under "Application" source "TelemetryBlocker".
-
-### Reports
-Post-execution, a Markdown report is generated with:
-- Execution details (date, version, Windows info)
-- Modules run with status and timestamps
-- Summary of changes
-- Errors (if any)
-
-## Customization
-
-### Adding Modules
-1. Create `modules/yourmodule.ps1` with functions and return `$true` on success.
-2. Optionally create `modules/yourmodule-rollback.ps1` for rollback logic.
-3. Update dependencies in the main script if needed.
-4. Use `Write-ModuleLog` for logging (from common.ps1).
-
-### Common Functions
-Located in `modules/common.ps1`:
-- `Write-ModuleLog`: Logs messages with fallback.
-- `Set-RegistryValue`: Safely sets registry values with type support.
-
-### Profiles
-Customize profiles in `run.bat` by editing the module lists.
-
-## Troubleshooting
-
-### Common Issues
-- **"Access Denied"**: Run as administrator.
-- **"Script not found"**: Use self-healing mode in launcher.
-- **Modules fail**: Check logs for specific errors; try rollback.
-- **No PowerShell**: Install PowerShell or use Windows PowerShell.
-
-### Pending Reboot
-If a reboot is pending, the script warns but continues. Reboot before running for best results.
-
-### Dry Run
-Use `-DryRun` to preview changes without applying them.
-
-### Update Issues
-If update fails, download manually from GitHub.
-
-## Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-- Fork the repo
-- Make changes
-- Test thoroughly
-- Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Inspired by [ShutUp10++](https://www.oo-software.com/en/shutup10)
-- Thanks to the open-source community and contributors
+Windows Telemetry Blocker is a **PowerShell-based privacy hardening tool** for Windows 10 and Windows 11. It disables known telemetry mechanisms, feedback prompts, background services, and optional preinstalled apps in a **transparent and mostly reversible** manner.
 
 ---
 
-**Test on a VM before use in production!**
+> [!WARNING]
+> This tool **modifies Windows system behavior**, including registry values, services, and installed applications.
+> 
+> * Administrator privileges are required
+> * Some actions (notably app removal) are **not automatically reversible**
+> * Testing in a **virtual machine** is strongly recommended before production use
+> 
+> Use at your own risk.
+
+---
+
+## Supported Platforms
+
+| Component        | Supported                               |
+| ---------------- | --------------------------------------- |
+| Windows Versions | Windows 10 (2004+) / Windows 11         |
+| Editions         | Home, Pro (Enterprise not fully tested) |
+| PowerShell       | 5.1+ (PowerShell Core supported)        |
+
+---
+
+## Features
+
+* Disable Windows telemetry and data collection
+* Disable feedback prompts and advertising ID
+* Disable telemetry-related Windows services
+* Optional removal of preinstalled / background apps
+* Modular execution with automatic dependency resolution
+* Dry-run mode (preview changes)
+* Detailed file-based logging
+* Rollback scripts for most modules
+* Automatic registry backups before modification
+
+---
+
+## Planned / Future Features
+
+These are **not currently implemented** and are tracked as future work:
+
+* GUI launcher
+* Scheduled execution
+* Auto-update mechanism
+* Windows Event Viewer audit logging
+* Integrity verification
+
+---
+
+## Quick Start
+
+1. Download the latest version from `Releases` in github.
+2. Right-click `run.bat` → **Run as administrator**
+3. Choose an execution mode
+4. Review logs after completion
+
+All logs and reports are saved locally in the project directory.
+
+---
+
+## Modules Overview
+
+| Module      | Description                                                   | Rollback   |
+| ----------- | ------------------------------------------------------------- | ---------- |
+| `telemetry` | Disables Windows telemetry, feedback, advertising ID, Cortana | ✅          |
+| `services`  | Disables telemetry-related Windows services                   | ✅          |
+| `apps`      | Removes optional preinstalled apps, disables background apps  | ❌ (manual) |
+| `misc`      | Disables CEIP and Windows Error Reporting                     | ✅          |
+
+Module dependencies are resolved automatically.
+
+---
+
+## Rollback & Safety
+
+* Registry backups are created automatically before changes
+* Rollback scripts are available in `modules/*-rollback.ps1`
+* Services are restored to **Manual** startup where applicable
+* App removals are **not reversible automatically** and must be reinstalled manually
+
+### Rollback Usage
+
+* Via launcher: Option "Rollback"
+
+## Logging & Reports
+
+### Log Files
+
+* `telemetry-blocker.log` – full execution log
+* `telemetry-blocker-errors.log` – errors only
+* `telemetry-blocker-stats.log` – execution statistics
+* `telemetry-blocker-report.md` – detailed Markdown summary
+
+Audit-style logging currently writes to files only.
+
+---
+
+## What This Tool Does NOT Do
+
+* It does not guarantee zero telemetry
+* It does not bypass Windows licensing or DRM
+* It does not modify Microsoft servers
+* It does not attempt to hide activity from antivirus or EDR tools
+
+---
+
+## Customization & Extensibility
+
+* Modules are located in `modules/`
+* New modules can be added with optional rollback scripts
+* Shared helper functions are in `modules/common.ps1`
+* Profiles can be customized via `run.bat`
+
+---
+
+## Troubleshooting
+
+* **Access denied**: Run as administrator
+* **Module failure**: Check logs, then rollback
+* **Pending reboot**: Reboot and rerun for best results
+* **Dry run**: Use `-DryRun` to preview changes
+
+---
+
+## Contributing
+
+Contributions are welcome. Please:
+
+* Follow the pull request template
+* Test changes on real or virtual machines
+* Avoid irreversible or undocumented behavior
+
+See `CONTRIBUTING.md` for details.
+
+---
+
+## License
+
+MIT License. See `LICENSE` for details.
+
+---
+
+## Acknowledgments
+
+* Inspired by ShutUp10++
+* Thanks to the open-source community
+
+---
+
+**Always test in a VM before using on a primary system.**
