@@ -25,7 +25,7 @@ A comprehensive, open-source toolkit to disable Windows telemetry and enhance pr
 - **Dashboard** - Monitoring dashboard with statistics and notifications
 - **Easy Rollback** - Revert changes with dedicated rollback scripts
 - **Advanced Logging** - Comprehensive logs, error tracking, and statistics
-- **Modular Design** - 22 independent modules for different functionality
+- **Modular Design** - 4 core modules with clear dependencies
 - **System Restore Points** - Automatic creation before changes for safety
 - **Multiple Execution Modes** - Interactive, batch, dry-run, and custom profiles
 - **Audit Logging** - Logs to Windows Event Viewer for compliance
@@ -38,10 +38,10 @@ A comprehensive, open-source toolkit to disable Windows telemetry and enhance pr
 1. **Download**: Clone or download the repository.
 2. **Run as Administrator**: Right-click `run.bat` and select "Run as administrator".
 3. **Choose Mode**:
-   - **Minimal**: Basic telemetry blocking.
-   - **Balanced**: Telemetry + services.
-   - **Max Privacy**: All modules.
-   - **Custom**: Select specific modules.
+   - **Option 1**: v1.0 GUI Launcher (if available) - Modern interface with monitoring and scheduling
+   - **Option 2**: v0.9 Interactive Script - Classic interactive telemetry blocker with module selection
+   - **Option 3**: Rollback - Undo recent changes
+   - **Option 4**: System Restore - Use Windows System Restore point
 4. **Review Logs**: Check `telemetry-blocker.log` and `telemetry-blocker-report.md` for results.
 
 ### Prerequisites
@@ -110,7 +110,7 @@ Disables and stops the following services:
 Rollback scripts are available for most modules in `modules/*-rollback.ps1`.
 
 ### Using Rollback
-- Via Launcher: Option 6 "Restore via builtin rollback system"
+- Via Launcher: Option 3 "Rollback (Undo recent changes)"
 - Via Script: `.\windowstelementryblocker.ps1 -Rollback`
 - Individual: Run specific rollback script, e.g., `.\modules\telemetry-rollback.ps1`
 
@@ -122,7 +122,7 @@ Rollback scripts are available for most modules in `modules/*-rollback.ps1`.
 
 Registry backups are created in `registry-backups/` before changes.
 
-## 📝 Logging and Reports
+## Logging and Reports
 
 ### Log Files
 - `telemetry-blocker.log`: Main execution log with timestamps.
@@ -140,7 +140,7 @@ Post-execution, a Markdown report is generated with:
 - Summary of changes
 - Errors (if any)
 
-## ⚙️ Customization
+## Customization
 
 ### Adding Modules
 1. Create `modules/yourmodule.ps1` with functions and return `$true` on success.
@@ -156,7 +156,7 @@ Located in `modules/common.ps1`:
 ### Profiles
 Customize profiles in `run.bat` by editing the module lists.
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 - **"Access Denied"**: Run as administrator.
@@ -182,11 +182,11 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - Test thoroughly
 - Submit a pull request
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Inspired by [ShutUp10++](https://www.oo-software.com/en/shutup10)
 - Thanks to the open-source community and contributors

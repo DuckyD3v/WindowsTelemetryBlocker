@@ -1,7 +1,15 @@
-<# misc.ps1 - Miscellaneous privacy tweaks #>
+# ============================================================================
+# Miscellaneous Module
+# ============================================================================
+# Description: Miscellaneous privacy tweaks (CEIP, Windows Error Reporting)
+# Dependencies: telemetry, services
+# Rollback: Available (misc-rollback.ps1)
+# ============================================================================
+
 param()
 . "$PSScriptRoot/common.ps1"
 
+#region Privacy Functions
 function Disable-CEIP {
     Write-ModuleLog "Disabling Customer Experience Improvement Program (CEIP)..."
     try {
@@ -29,11 +37,14 @@ function Disable-ErrorReporting {
         return $false
     }
 }
+#endregion
 
+#region Module Execution
 Write-ModuleLog "Starting misc module..."
 $results = @()
 $results += Disable-CEIP
 $results += Disable-ErrorReporting
+
 if ($results -contains $false) {
     Write-ModuleLog "Misc module completed with errors." 'ERROR'
     return $false
@@ -41,3 +52,4 @@ if ($results -contains $false) {
     Write-ModuleLog "Misc module completed successfully."
     return $true
 }
+#endregion

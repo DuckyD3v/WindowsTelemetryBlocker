@@ -1,9 +1,13 @@
-# ===============================
+# ============================================================================
 # Windows Telemetry Blocker
-$ScriptVersion = '1.0 (presnapshot)'
-# ===============================
+# Main Script
+# ============================================================================
+# Script Version: 1.0 (presnapshot)
+# Description: Comprehensive toolkit to disable Windows telemetry and enhance
+#              privacy on Windows 10 and 11
+# ============================================================================
 
-# ==== SAFETY BARRIER SYSTEM ====
+#region Global State and Safety System
 # Global state tracking for safe interruption handling
 $global:CriticalOperationInProgress = $false
 $global:CriticalOperationName = ""
@@ -30,7 +34,9 @@ trap {
 $ExecutionContext.SessionState.Module.OnRemove = {
     & Invoke-CleanupTasks
 }
+#endregion
 
+#region Parameters
 param(
     [switch]$All,
     [string[]]$Modules,
@@ -44,9 +50,12 @@ param(
     [switch]$Update,
     [switch]$EnableAuditLog
 )
+#endregion
 
-# --- Special parameter handling (outside param block) ---
+#region Special Parameter Handling
+# Handle special parameters that exit early (Rollback, RestorePoint)
 $handledSpecial = $false
+
 if ($Rollback) {
     Write-Host "Starting rollback for all modules..." -ForegroundColor Yellow
     $rollbackList = @('telemetry','services','apps','misc')
@@ -71,14 +80,14 @@ if ($Rollback) {
     Write-Log "Rollback operation complete."
     $handledSpecial = $true
 }
+
 if ($RestorePoint) {
     Write-Host "Restoring system via restore point and registry backup..." -ForegroundColor Yellow
     try {
-        # Attempt system restore (requires admin)
         Write-Host "Attempting system restore..." -ForegroundColor Yellow
-        # This is a placeholder; actual restore logic may require user interaction or external tools
         Write-Host "Please use Windows System Restore from Control Panel or Recovery Environment." -ForegroundColor Cyan
         Write-Log "Restore point operation requested. User should use Windows System Restore."
+        
         # Optionally, restore registry backup
         $backupDir = Join-Path $PSScriptRoot "registry-backups"
         $backups = Get-ChildItem -Path $backupDir -Filter "regbackup_*.reg" | Sort-Object LastWriteTime -Descending
@@ -97,13 +106,19 @@ if ($RestorePoint) {
     }
     $handledSpecial = $true
 }
+
 if ($handledSpecial) {
     Write-Host "Press any key to exit..."
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     exit
 }
+#endregion
 
-# --- Banner ---
+#region Script Initialization
+# Script version
+$ScriptVersion = '1.0 (presnapshot)'
+
+# Display banner
 Write-Host "===============================" -ForegroundColor Cyan
 Write-Host (" Windows Telemetry Blocker v{0}" -f $ScriptVersion) -ForegroundColor Cyan
 Write-Host "===============================" -ForegroundColor Cyan
@@ -116,23 +131,25 @@ if ($Update) {
     Write-AuditLog "Script update check performed"
 }
 
-# Fail fast for unhandled errors in scripts we call; we'll handle expected errors with try/catch
+# Set error handling preferences
 $ErrorActionPreference = 'Stop'
 $VerbosePreference = 'Continue'
 
 Write-Host ("Script started at: {0}" -f (Get-Date)) -ForegroundColor Yellow
 Write-Host ("Running from: {0}" -f $PSScriptRoot) -ForegroundColor Yellow
 Write-Host "================================`n"
+#endregion
 
-# ==== Paths & files (define early) ====
+#region Path and Configuration Variables
 $logFile            = Join-Path $PSScriptRoot "telemetry-blocker.log"
 $errorLogFile       = Join-Path $PSScriptRoot "telemetry-blocker-errors.log"
 $executionStatsFile = Join-Path $PSScriptRoot "telemetry-blocker-stats.log"
 $reportFile         = Join-Path $PSScriptRoot "telemetry-blocker-report.md"
 $modulesDir         = Join-Path $PSScriptRoot "modules"
 $GitHubRepo         = "https://github.com/N0tHorizon/WindowsTelemetryBlocker"
+#endregion
 
-# ==== Logging helpers (single authoritative definitions) ====
+#region Logging Functions
 function Write-Log {
     param([string]$msg, [switch]$Error)
     try {
@@ -158,7 +175,21 @@ function Write-Stats {
     }
 }
 
-# ==== SAFETY BARRIER FUNCTIONS ====
+function Write-AuditLog {
+    param([string]$Message, [string]$EventType = "Information")
+    if (-not $EnableAuditLog) { return }
+    try {
+        if (-not (Get-EventLog -LogName Application -Source "TelemetryBlocker" -ErrorAction SilentlyContinue)) {
+            New-EventLog -LogName Application -Source "TelemetryBlocker" -ErrorAction Stop
+        }
+        Write-EventLog -LogName Application -Source "TelemetryBlocker" -EventId 1000 -EntryType $EventType -Message $Message -ErrorAction Stop
+    } catch {
+        Write-Log ("Failed to write audit log: {0}" -f $_.Exception.Message) -Error
+    }
+}
+#endregion
+
+#region Safety Barrier Functions
 function Register-CleanupTask {
     param([scriptblock]$Task, [string]$Description)
     $cleanup = @{
@@ -243,8 +274,9 @@ function Invoke-SafeCleanup {
     Write-Host "[SAFETY] System Restore Point was created at script start - use it to revert changes if needed." -ForegroundColor Yellow
     Write-Log "[SAFETY] Registry rollback via System Restore Point available"
 }
+#endregion
 
-# ==== New Feature Functions ====
+#region Utility Functions
 function Update-Script {
     Write-Host "Fetching latest version from GitHub..." -ForegroundColor Yellow
     try {
@@ -291,23 +323,9 @@ function Update-Script {
     }
 }
 
-function Write-AuditLog {
-    param([string]$Message, [string]$EventType = "Information")
-    if (-not $EnableAuditLog) { return }
-    try {
-        if (-not (Get-EventLog -LogName Application -Source "TelemetryBlocker" -ErrorAction SilentlyContinue)) {
-            New-EventLog -LogName Application -Source "TelemetryBlocker" -ErrorAction Stop
-        }
-        Write-EventLog -LogName Application -Source "TelemetryBlocker" -EventId 1000 -EntryType $EventType -Message $Message -ErrorAction Stop
-    } catch {
-        Write-Log ("Failed to write audit log: {0}" -f $_.Exception.Message) -Error
-    }
-}
-
-# ==== Registry backup/export before changes ====
 function Export-RegistryBackup {
     try {
-        if (-not (Test-Path $modulesDir)) { New-Item -ItemType Directory -Path $modulesDir | Out-Null } # ensure modules dir exists for context
+        if (-not (Test-Path $modulesDir)) { New-Item -ItemType Directory -Path $modulesDir | Out-Null }
         $backupDir = Join-Path $PSScriptRoot "registry-backups"
         if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir | Out-Null }
         $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
@@ -315,7 +333,7 @@ function Export-RegistryBackup {
         Write-Host ("Exporting registry backup to {0} ..." -f $backupFile) -ForegroundColor Cyan
         # Show a simple status bar while reg.exe runs
         $script:backupJob = Start-Job -ScriptBlock { param($file) reg.exe export "HKLM" $file /y | Out-Null } -ArgumentList $backupFile
-        $status = @('|','/','-','\\')
+        $status = @('|','/','-','\')
         $i = 0
         while ($backupJob.State -eq 'Running') {
             Write-Host -NoNewline ("`r[EXPORTING] Please wait " + $status[$i % $status.Length])
@@ -334,48 +352,19 @@ function Export-RegistryBackup {
     }
 }
 
-if (-not $DryRun) { Export-RegistryBackup }
-
-# ==== Gather OS info (safe) ====
-try {
-    $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
-    $winVersion = $osInfo.Version
-    $winBuild   = $osInfo.BuildNumber
-} catch {
-    $winVersion = "Unknown"
-    $winBuild   = "Unknown"
-    Write-Log ("Failed to determine Windows version/build: {0}" -f $_.Exception.Message) -Error
-}
-
-Write-Log "=== Script started ==="
-Write-Log ("Windows Version: {0}" -f $winVersion)
-Write-Log ("Windows Build: {0}" -f $winBuild)
-Write-Log ("Script Version: {0}" -f $ScriptVersion)
-Write-AuditLog ("Script started - Version {0}, Windows {1} Build {2}" -f $ScriptVersion, $winVersion, $winBuild)
-
-# ==== Ensure modules directory exists ====
-if (-not (Test-Path $modulesDir)) {
-    Write-Host "Creating modules directory..." -ForegroundColor Yellow
-    try {
-        New-Item -ItemType Directory -Path $modulesDir -Force | Out-Null
-        Write-Host "[OK] Modules directory created" -ForegroundColor Green
-        Write-Log ("Modules directory created at {0}" -f $modulesDir)
-    } catch {
-        Write-Host ("[ERROR] Failed to create modules directory: {0}" -f $_.Exception.Message) -ForegroundColor Red
-        Write-Log ("Failed to create modules directory: {0}" -f $_.Exception.Message) -Error
-        exit 1
+function Invoke-IfNotDryRun {
+    param([scriptblock]$Action, [string]$Description)
+    if ($DryRun) {
+        Write-Host ("[DRY-RUN] {0}" -f $Description) -ForegroundColor DarkYellow
+        Write-Log ("[DRY-RUN] {0}" -f $Description)
+    } else {
+        & $Action
+        Write-Log $Description
     }
 }
+#endregion
 
-# ==== Rollback coverage scan ====
-$rollbackCoverage = @{}
-foreach ($mod in $moduleList) {
-    $rollbackPath = Join-Path $modulesDir ("{0}-rollback.ps1" -f $mod)
-    $rollbackCoverage[$mod] = Test-Path $rollbackPath
-}
-Write-Log ("Rollback coverage: {0}" -f (($rollbackCoverage.GetEnumerator() | ForEach-Object { "$($_.Key):$($_.Value)" }) -join ', '))
-
-# ==== System helpers ====
+#region System Helper Functions
 function New-SystemRestorePoint {
     try {
         Write-Host "`nCreating system restore point..." -ForegroundColor Yellow
@@ -465,17 +454,6 @@ function Test-AdminEvaluation {
     }
 }
 
-function Invoke-IfNotDryRun {
-    param([scriptblock]$Action, [string]$Description)
-    if ($DryRun) {
-        Write-Host ("[DRY-RUN] {0}" -f $Description) -ForegroundColor DarkYellow
-        Write-Log ("[DRY-RUN] {0}" -f $Description)
-    } else {
-        & $Action
-        Write-Log $Description
-    }
-}
-
 function Test-PendingReboot {
     try {
         $pending = $false
@@ -487,15 +465,51 @@ function Test-PendingReboot {
         return $false
     }
 }
+#endregion
 
-if (Test-PendingReboot) {
-    Write-Host "⚠️  A system reboot is pending. It's recommended to reboot before running this script." -ForegroundColor Yellow
-    Write-Log "Pending reboot detected."
+#region Pre-Execution Setup
+# Gather OS info
+try {
+    $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
+    $winVersion = $osInfo.Version
+    $winBuild   = $osInfo.BuildNumber
+} catch {
+    $winVersion = "Unknown"
+    $winBuild   = "Unknown"
+    Write-Log ("Failed to determine Windows version/build: {0}" -f $_.Exception.Message) -Error
 }
 
-# ==== Pre-checks ====
+Write-Log "=== Script started ==="
+Write-Log ("Windows Version: {0}" -f $winVersion)
+Write-Log ("Windows Build: {0}" -f $winBuild)
+Write-Log ("Script Version: {0}" -f $ScriptVersion)
+Write-AuditLog ("Script started - Version {0}, Windows {1} Build {2}" -f $ScriptVersion, $winVersion, $winBuild)
 
-# IMPORTANT, $checks is out due to scoping issues with functions defined below
+# Ensure modules directory exists
+if (-not (Test-Path $modulesDir)) {
+    Write-Host "Creating modules directory..." -ForegroundColor Yellow
+    try {
+        New-Item -ItemType Directory -Path $modulesDir -Force | Out-Null
+        Write-Host "[OK] Modules directory created" -ForegroundColor Green
+        Write-Log ("Modules directory created at {0}" -f $modulesDir)
+    } catch {
+        Write-Host ("[ERROR] Failed to create modules directory: {0}" -f $_.Exception.Message) -ForegroundColor Red
+        Write-Log ("Failed to create modules directory: {0}" -f $_.Exception.Message) -Error
+        exit 1
+    }
+}
+
+# Export registry backup before changes
+if (-not $DryRun) { Export-RegistryBackup }
+
+# Check for pending reboot
+if (Test-PendingReboot) {
+    Write-Host "A system reboot is pending. It's recommended to reboot before running this script." -ForegroundColor Yellow
+    Write-Log "Pending reboot detected."
+}
+#endregion
+
+#region Pre-Execution Checks
 Write-Host "`n=== Running Pre-Execution Checks ===" -ForegroundColor Cyan
 $checks = @(
     @{ Name = "Admin Privileges"; Function = { Test-AdminEvaluation } },
@@ -525,10 +539,34 @@ if (-not (New-SystemRestorePoint)) {
         Write-Log "User chose to continue despite restore point failure"
     }
 }
+#endregion
 
-# ==== User interaction / module selection ====
+#region Module Selection and Dependency Resolution
 $moduleList = @('telemetry','services','apps','misc')
 
+# Module dependency definitions
+$moduleDependencies = @{
+    'telemetry' = @()
+    'services'  = @('telemetry')
+    'apps'      = @()
+    'misc'      = @('telemetry','services')
+}
+
+function Resolve-ModuleDependencies {
+    param([string[]]$mods)
+    $resolved = @()
+    foreach ($m in $mods) {
+        if ($moduleDependencies.ContainsKey($m)) {
+            foreach ($d in $moduleDependencies[$m]) {
+                if ($d -and ($d -notin $resolved)) { $resolved += $d }
+            }
+        }
+        if ($m -notin $resolved) { $resolved += $m }
+    }
+    return $resolved
+}
+
+# User interaction / module selection functions
 function Show-Menu {
     Write-Host "`n=== Windows Telemetry Blocker ===" -ForegroundColor Cyan
     Write-Host "1. Default Mode (All Modules)" -ForegroundColor Yellow
@@ -562,6 +600,7 @@ function Get-UserSelection {
     return $selectedModules
 }
 
+# Determine which modules to run
 if ($Interactive) {
     do {
         Show-Menu
@@ -588,39 +627,25 @@ if ($Interactive) {
     exit 1
 }
 
-# ==== Module dependency resolution ====
-$moduleDependencies = @{
-    'telemetry' = @()
-    'services'  = @('telemetry')
-    'apps'      = @()
-    'misc'      = @('telemetry','services')
+# Resolve module dependencies
+$toRunResolved = Resolve-ModuleDependencies -mods $toRun
+
+# Rollback coverage scan
+$rollbackCoverage = @{}
+foreach ($mod in $moduleList) {
+    $rollbackPath = Join-Path $modulesDir ("{0}-rollback.ps1" -f $mod)
+    $rollbackCoverage[$mod] = Test-Path $rollbackPath
 }
+Write-Log ("Rollback coverage: {0}" -f (($rollbackCoverage.GetEnumerator() | ForEach-Object { "$($_.Key):$($_.Value)" }) -join ', '))
+#endregion
 
-function Resolve-ModuleDependencies {
-    param([string[]]$mods)
-    $resolved = @()
-    foreach ($m in $mods) {
-        if ($moduleDependencies.ContainsKey($m)) {
-            foreach ($d in $moduleDependencies[$m]) {
-                if ($d -and ($d -notin $resolved)) { $resolved += $d }
-            }
-        }
-        if ($m -notin $resolved) { $resolved += $m }
-    }
-    return $resolved
-}
-
-
-
-# ==== Module execution loop ====
+#region Module Execution
 Write-Host "`n=== Starting Module Execution ===" -ForegroundColor Cyan
 $summary = @()
 $moduleResults = @{}
 $executedModules = @()
 $rollbackModules = @()
 $startTime = Get-Date
-
-$toRunResolved = Resolve-ModuleDependencies -mods $toRun
 
 foreach ($mod in $toRunResolved) {
     Write-Host ("`nRunning module: {0}" -f $mod) -ForegroundColor Yellow
@@ -708,8 +733,9 @@ foreach ($mod in $toRunResolved) {
         }
     }
 }
+#endregion
 
-# ==== Post execution stats & report ====
+#region Post-Execution Reporting
 $endTime = Get-Date
 $duration = $endTime - $startTime
 Write-Stats ("Execution started: {0}" -f $startTime)
@@ -745,7 +771,7 @@ if ($rollbackModules.Count -gt 0) {
     Write-Host ("Rollback modules executed: {0}" -f ($rollbackModules -join ', ')) -ForegroundColor Red
 }
 
-# --- Generate Markdown report ---
+# Generate Markdown report
 $reportContent = @()
 $reportContent += "# Windows Telemetry Blocker - Change Report"
 $reportContent += ""
@@ -793,3 +819,4 @@ try {
 
 Write-Host "Press any key to exit..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+#endregion

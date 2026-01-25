@@ -1,8 +1,17 @@
 @echo off
+REM ============================================================================
 REM Windows Telemetry Blocker Launcher
-REM v1.0 with Phase 1 Integration
+REM ============================================================================
+REM Version: 1.5
+REM Phase: 1
+REM Description: Batch launcher for Windows Telemetry Blocker with menu system
+REM ============================================================================
 
 setlocal enabledelayedexpansion
+
+REM ============================================================================
+REM Configuration and Path Setup
+REM ============================================================================
 set "SCRIPT_DIR=%~dp0"
 set "LAUNCHER_VERSION=1.5"
 set "PHASE=1"
@@ -12,7 +21,9 @@ set "SAFETY_LOG=%SCRIPT_DIR%telemetry-blocker-safety.log"
 set "LAST_EXECUTION_STATE=%SCRIPT_DIR%.last-execution-state"
 set "V1_LAUNCHER=%SCRIPT_DIR%v1.0\launcher.ps1"
 
-REM Initialize logs
+REM ============================================================================
+REM Logging Initialization
+REM ============================================================================
 if not exist "%LOG_FILE%" echo. > "%LOG_FILE%"
 if not exist "%SAFETY_LOG%" echo. > "%SAFETY_LOG%"
 echo %date% %time% [INFO] Launcher started >> "%LOG_FILE%"
@@ -22,6 +33,9 @@ echo. >> "%SAFETY_LOG%"
 echo %date% %time% ====== LAUNCHER SESSION START ====== >> "%SAFETY_LOG%"
 echo %date% %time% [INFO] Launcher version: %LAUNCHER_VERSION% >> "%SAFETY_LOG%"
 
+REM ============================================================================
+REM Safety Checks
+REM ============================================================================
 REM Check for incomplete execution from previous session
 if exist "%LAST_EXECUTION_STATE%" (
     echo.
@@ -30,7 +44,9 @@ if exist "%LAST_EXECUTION_STATE%" (
     del "%LAST_EXECUTION_STATE%"
 )
 
-REM Check admin rights
+REM ============================================================================
+REM Administrator Privilege Check
+REM ============================================================================
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo [WARN] This script requires administrator privileges.
@@ -41,7 +57,9 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-REM Display title
+REM ============================================================================
+REM Display Initialization
+REM ============================================================================
 cls
 title Windows Telemetry Blocker
 echo ===================================
@@ -52,7 +70,9 @@ echo [OK] Running with administrator privileges.
 echo %date% %time% [OK] Running with admin privileges >> "%LOG_FILE%"
 echo.
 
-REM Find PowerShell
+REM ============================================================================
+REM PowerShell Detection
+REM ============================================================================
 set "PS_EXE="
 where pwsh.exe >nul 2>&1
 if %errorlevel%==0 (
@@ -93,6 +113,9 @@ echo %date% %time% [INFO] Using PowerShell: %PS_EXE% >> "%LOG_FILE%"
 echo %date% %time% [INFO] Using PowerShell: %PS_EXE% >> "%SAFETY_LOG%"
 echo.
 
+REM ============================================================================
+REM Script Validation
+REM ============================================================================
 REM Check for main script
 if not exist "%PS_SCRIPT%" (
     echo [ERROR] Main PowerShell script not found: %PS_SCRIPT%
@@ -113,7 +136,9 @@ if defined SCRIPT_VERSION (
 )
 echo.
 
-REM Main menu
+REM ============================================================================
+REM Main Menu Loop
+REM ============================================================================
 :menu
 cls
 title Windows Telemetry Blocker v1.0
@@ -152,6 +177,9 @@ echo Press Ctrl+C at any time to safely interrupt execution.
 echo.
 set /p CHOICE="Enter choice [1-5]: "
 
+REM ============================================================================
+REM Menu Option Handlers
+REM ============================================================================
 if "%CHOICE%"=="1" (
     REM Check if v1.0 launcher exists
     if not exist "%V1_LAUNCHER%" (
@@ -256,5 +284,8 @@ if "%CHOICE%"=="5" (
     exit /b 0
 )
 
+REM ============================================================================
+REM Invalid Choice Handler
+REM ============================================================================
 echo Invalid choice. Please try again.
 goto menu

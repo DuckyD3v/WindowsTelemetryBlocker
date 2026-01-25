@@ -1,7 +1,15 @@
-<# services.ps1 - Disables Windows telemetry and unnecessary services #>
+# ============================================================================
+# Services Module
+# ============================================================================
+# Description: Disables Windows telemetry and unnecessary services
+# Dependencies: telemetry
+# Rollback: Available (services-rollback.ps1)
+# ============================================================================
+
 param()
 . "$PSScriptRoot/common.ps1"
 
+#region Service Configuration
 $servicesToDisable = @(
     'DiagTrack',
     'dmwappushservice',
@@ -12,7 +20,9 @@ $servicesToDisable = @(
     'MapsBroker',
     'WSearch'
 )
+#endregion
 
+#region Service Functions
 function Disable-ServiceSafe($serviceName) {
     Write-ModuleLog "Disabling service: $serviceName"
     try {
@@ -24,16 +34,19 @@ function Disable-ServiceSafe($serviceName) {
         Write-ModuleLog "$serviceName disabled."
         return $true
     } catch {
-    Write-ModuleLog "Error disabling ${serviceName}: $($_)" 'ERROR'
+        Write-ModuleLog "Error disabling ${serviceName}: $($_)" 'ERROR'
         return $false
     }
 }
+#endregion
 
+#region Module Execution
 Write-ModuleLog "Starting services module..."
 $results = @()
 foreach ($svc in $servicesToDisable) {
     $results += Disable-ServiceSafe $svc
 }
+
 if ($results -contains $false) {
     Write-ModuleLog "Services module completed with errors." 'ERROR'
     return $false
@@ -41,3 +54,4 @@ if ($results -contains $false) {
     Write-ModuleLog "Services module completed successfully."
     return $true
 }
+#endregion

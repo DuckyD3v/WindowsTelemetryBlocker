@@ -1,5 +1,10 @@
-# Common functions for all modules
+# ============================================================================
+# Common Module Functions
+# ============================================================================
+# Description: Shared utility functions used by all telemetry blocker modules
+# ============================================================================
 
+#region Logging Functions
 # Enhanced Write-ModuleLog: robust fallback, cross-env
 function Write-ModuleLog {
     param([string]$msg)
@@ -15,7 +20,9 @@ function Write-ModuleLog {
         Write-Host "[LOG ERROR] $msg" -ForegroundColor Red
     }
 }
+#endregion
 
+#region Registry Functions
 # Enhanced Set-RegistryValue: supports more types, error handling, cross-env
 function Set-RegistryValue {
     param(
@@ -27,7 +34,7 @@ function Set-RegistryValue {
     )
     if ($global:dryrun) {
         Write-Host "[DRY-RUN] Would set $Path\$Name = $Value ($Type)" -ForegroundColor DarkYellow
-    Write-ModuleLog "[DRY-RUN] Would set $($Path)\$($Name) = $Value ($Type)"
+        Write-ModuleLog "[DRY-RUN] Would set $($Path)\$($Name) = $Value ($Type)"
     } else {
         try {
             if ($Type -eq "DWord" -or $Type -eq "QWord") {
@@ -48,3 +55,4 @@ function Set-RegistryValue {
         }
     }
 }
+#endregion
