@@ -26,32 +26,7 @@ REM Check for incomplete execution from previous session
 if exist "%LAST_EXECUTION_STATE%" (
     echo.
     echo [WARN] Previous execution may have been interrupted.
-    echo [INFO] Checking status...
-    echo %date% %time% [WARN] Incomplete execution detected from previous session >> "%SAFETY_LOG%"
-    
-    for /f "delims=" %%A in (%LAST_EXECUTION_STATE%) do (
-        echo %%A
-        echo %date% %time% [STATUS] %%A >> "%SAFETY_LOG%"
-    )
-    
-    echo.
-    echo Do you want to:
-    echo 1. Run full rollback for safety
-    echo 2. Continue normally (not recommended)
-    echo 3. Exit
-    set /p INCOMPLETE_CHOICE="Enter choice [1-3]: "
-    
-    if "!INCOMPLETE_CHOICE!"=="1" (
-        echo [INFO] Running rollback for safety...
-        echo %date% %time% [SAFETY] User elected rollback for incomplete execution >> "%SAFETY_LOG%"
-        del "%LAST_EXECUTION_STATE%"
-        goto menu
-    )
-    if "!INCOMPLETE_CHOICE!"=="3" (
-        echo [INFO] Exiting...
-        exit /b 0
-    )
-    echo Continuing normally.
+    echo [INFO] Cleaning up...
     del "%LAST_EXECUTION_STATE%"
 )
 
@@ -140,19 +115,40 @@ echo.
 
 REM Main menu
 :menu
+cls
+title Windows Telemetry Blocker v1.0
+timeout /t 1 /nobreak >nul
 echo.
-echo ===================================
-echo       MENU (v1.0 - Phase 1)
-echo ===================================
-echo 1. v1.0 Launcher (NEW - Recommended)
-echo 2. Run v0.9 Interactive Script
-echo 3. Rollback (Undo telemetry blocking)
-echo 4. System Restore (Full system recovery)
-echo 5. Exit
-echo ===================================
+echo ======================================================================
 echo.
-echo [SAFETY] Note: A system restore point is created before any changes.
-echo [SAFETY] Press Ctrl+C if the script is running incorrectly.
+echo         WINDOWS TELEMETRY BLOCKER v1.0 - Main Menu
+echo.
+echo ======================================================================
+echo.
+echo EXECUTION MODES:
+echo.
+echo  [1] v1.0 GUI Launcher (NEW - Recommended)
+echo      Modern interface with monitoring and scheduling
+echo.
+echo  [2] v0.9 Interactive Script
+echo      Classic interactive telemetry blocker
+echo.
+echo RECOVERY AND MANAGEMENT:
+echo.
+echo  [3] Rollback (Undo recent changes)
+echo      Restore services and registry to previous state
+echo.
+echo  [4] System Restore (Full recovery)
+echo      Use Windows System Restore point
+echo.
+echo  [5] Exit
+echo      Close this launcher
+echo.
+echo ======================================================================
+echo.
+echo SAFETY NOTICE:
+echo A system restore point is created before any changes.
+echo Press Ctrl+C at any time to safely interrupt execution.
 echo.
 set /p CHOICE="Enter choice [1-5]: "
 
