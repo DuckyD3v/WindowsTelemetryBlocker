@@ -1,13 +1,16 @@
 @echo off
 REM Windows Telemetry Blocker Launcher
+REM v1.0 with Phase 1 Integration
 
 setlocal enabledelayedexpansion
 set "SCRIPT_DIR=%~dp0"
-set "LAUNCHER_VERSION=1.3"
+set "LAUNCHER_VERSION=1.0"
+set "PHASE=1"
 set "LOG_FILE=%SCRIPT_DIR%telemetry-blocker.log"
 set "PS_SCRIPT=%SCRIPT_DIR%windowstelementryblocker.ps1"
 set "SAFETY_LOG=%SCRIPT_DIR%telemetry-blocker-safety.log"
 set "LAST_EXECUTION_STATE=%SCRIPT_DIR%.last-execution-state"
+set "V1_LAUNCHER=%SCRIPT_DIR%v1.0\launcher.ps1"
 
 REM Initialize logs
 if not exist "%LOG_FILE%" echo. > "%LOG_FILE%"
@@ -139,21 +142,47 @@ REM Main menu
 :menu
 echo.
 echo ===================================
-echo         MENU
+echo       MENU (v1.0 - Phase 1)
 echo ===================================
-echo 1. Run Interactive Script (Recommended)
-echo 2. Rollback (Undo telemetry blocking)
-echo 3. System Restore (Full system recovery)
-echo 4. Exit
+echo 1. v1.0 Launcher (NEW - Recommended)
+echo 2. Run v0.9 Interactive Script
+echo 3. Rollback (Undo telemetry blocking)
+echo 4. System Restore (Full system recovery)
+echo 5. Exit
 echo ===================================
 echo.
 echo [SAFETY] Note: A system restore point is created before any changes.
 echo [SAFETY] Press Ctrl+C if the script is running incorrectly.
 echo.
-set /p CHOICE="Enter choice [1-4]: "
+set /p CHOICE="Enter choice [1-5]: "
 
 if "%CHOICE%"=="1" (
-    echo [INFO] Launching interactive script...
+    REM Check if v1.0 launcher exists
+    if not exist "%V1_LAUNCHER%" (
+        echo [ERROR] v1.0 Launcher not found: %V1_LAUNCHER%
+        echo [WARN] Falling back to v0.9 script.
+        echo.
+        goto choice_2
+    )
+    echo [INFO] Launching v1.0 (Phase 1)...
+    echo [SAFETY] Recording execution state...
+    echo v1.0 Launcher - Started %date% %time% > "%LAST_EXECUTION_STATE%"
+    echo %date% %time% [EXECUTION] v1.0 launcher started >> "%SAFETY_LOG%"
+    "%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%V1_LAUNCHER%"
+    if %errorlevel% neq 0 (
+        echo %date% %time% [ERROR] v1.0 launcher ended with error code %errorlevel% >> "%SAFETY_LOG%"
+        echo [WARN] v1.0 launcher ended with error. Check logs for details.
+    ) else (
+        echo %date% %time% [SUCCESS] v1.0 launcher completed successfully >> "%SAFETY_LOG%"
+        del "%LAST_EXECUTION_STATE%"
+    )
+    pause
+    goto menu
+)
+
+:choice_2
+if "%CHOICE%"=="2" (
+    echo [INFO] Launching v0.9 interactive script...
     echo [SAFETY] Recording execution state...
     echo Interactive Mode - Started %date% %time% > "%LAST_EXECUTION_STATE%"
     echo %date% %time% [EXECUTION] Interactive mode started >> "%SAFETY_LOG%"
@@ -169,7 +198,7 @@ if "%CHOICE%"=="1" (
     goto menu
 )
 
-if "%CHOICE%"=="2" (
+if "%CHOICE%"=="3" (
     echo [INFO] Launching rollback...
     echo [SAFETY] Recording execution state...
     echo Rollback Mode - Started %date% %time% > "%LAST_EXECUTION_STATE%"
@@ -194,7 +223,7 @@ if "%CHOICE%"=="2" (
     goto menu
 )
 
-if "%CHOICE%"=="3" (
+if "%CHOICE%"=="4" (
     echo [INFO] Launching system restore...
     echo [SAFETY] Recording execution state...
     echo System Restore Mode - Started %date% %time% > "%LAST_EXECUTION_STATE%"
@@ -220,7 +249,7 @@ if "%CHOICE%"=="3" (
     goto menu
 )
 
-if "%CHOICE%"=="4" (
+if "%CHOICE%"=="5" (
     echo [INFO] Exiting...
     echo %date% %time% [INFO] Launcher exiting normally >> "%SAFETY_LOG%"
     exit /b 0

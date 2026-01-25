@@ -1,0 +1,276 @@
+{
+  "version": "1.0",
+  "profiles": {
+    "minimal": {
+      "name": "Minimal (Telemetry Only)",
+      "description": "Disable only core Windows telemetry - least invasive",
+      "modules": [
+        "telemetry"
+      ],
+      "apps_remove": [],
+      "services_disable": [],
+      "recommended": false
+    },
+    "balanced": {
+      "name": "Balanced (Recommended)",
+      "description": "Telemetry + privacy-critical services - best for most users",
+      "modules": [
+        "telemetry",
+        "services"
+      ],
+      "apps_remove": [],
+      "services_disable": [
+        "DiagTrack",
+        "dmwappushservice",
+        "WerSvc",
+        "PcaSvc"
+      ],
+      "recommended": true
+    },
+    "maximum": {
+      "name": "Maximum Privacy (All Modules)",
+      "description": "All privacy enhancements including app removal",
+      "modules": [
+        "telemetry",
+        "services",
+        "apps",
+        "misc"
+      ],
+      "apps_remove": [
+        "Microsoft.3DBuilder",
+        "Microsoft.BingWeather",
+        "Microsoft.GetHelp",
+        "Microsoft.Getstarted",
+        "Microsoft.WindowsFeedbackHub",
+        "Microsoft.ZuneMusic",
+        "Microsoft.ZuneVideo",
+        "Microsoft.MicrosoftSolitaireCollection",
+        "Microsoft.People",
+        "Microsoft.MicrosoftOfficeHub",
+        "Microsoft.SkypeApp",
+        "Microsoft.XboxApp",
+        "Microsoft.XboxGameOverlay",
+        "Microsoft.XboxGamingOverlay",
+        "Microsoft.XboxIdentityProvider",
+        "Microsoft.XboxSpeechToTextOverlay",
+        "Microsoft.YourPhone",
+        "Microsoft.MicrosoftStickyNotes",
+        "Microsoft.OneConnect",
+        "Microsoft.MSPaint",
+        "Microsoft.Microsoft3DViewer",
+        "Microsoft.MixedReality.Portal"
+      ],
+      "services_disable": [
+        "DiagTrack",
+        "dmwappushservice",
+        "WMPNetworkSvc",
+        "WerSvc",
+        "PcaSvc",
+        "XblGameSave",
+        "XblAuthManager",
+        "MapsBroker",
+        "WSearch"
+      ],
+      "recommended": false
+    }
+  },
+  "all_removable_apps": [
+    {
+      "name": "Microsoft.3DBuilder",
+      "display": "3D Builder",
+      "category": "Games & Apps",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.BingWeather",
+      "display": "Weather",
+      "category": "Widgets",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.GetHelp",
+      "display": "Get Help",
+      "category": "System",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.Getstarted",
+      "display": "Get Started",
+      "category": "System",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.WindowsFeedbackHub",
+      "display": "Feedback Hub",
+      "category": "System",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.ZuneMusic",
+      "display": "Groove Music",
+      "category": "Entertainment",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.ZuneVideo",
+      "display": "Movies & TV",
+      "category": "Entertainment",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.MicrosoftSolitaireCollection",
+      "display": "Microsoft Solitaire Collection",
+      "category": "Games",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.People",
+      "display": "People",
+      "category": "Communication",
+      "safe": false
+    },
+    {
+      "name": "Microsoft.MicrosoftOfficeHub",
+      "display": "Office Hub",
+      "category": "Productivity",
+      "safe": false
+    },
+    {
+      "name": "Microsoft.SkypeApp",
+      "display": "Skype",
+      "category": "Communication",
+      "safe": false
+    },
+    {
+      "name": "Microsoft.XboxApp",
+      "display": "Xbox",
+      "category": "Games",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.XboxGameOverlay",
+      "display": "Xbox Game Bar",
+      "category": "Games",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.XboxGamingOverlay",
+      "display": "Xbox Gaming Overlay",
+      "category": "Games",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.XboxIdentityProvider",
+      "display": "Xbox Identity Provider",
+      "category": "Games",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.XboxSpeechToTextOverlay",
+      "display": "Xbox Speech to Text",
+      "category": "Games",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.YourPhone",
+      "display": "Your Phone",
+      "category": "Communication",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.MicrosoftStickyNotes",
+      "display": "Sticky Notes",
+      "category": "Productivity",
+      "safe": false
+    },
+    {
+      "name": "Microsoft.OneConnect",
+      "display": "OneConnect",
+      "category": "Communication",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.MSPaint",
+      "display": "Paint",
+      "category": "Accessories",
+      "safe": false
+    },
+    {
+      "name": "Microsoft.Microsoft3DViewer",
+      "display": "3D Viewer",
+      "category": "Accessories",
+      "safe": true
+    },
+    {
+      "name": "Microsoft.MixedReality.Portal",
+      "display": "Mixed Reality Portal",
+      "category": "System",
+      "safe": true
+    }
+  ],
+  "all_disableable_services": [
+    {
+      "name": "DiagTrack",
+      "display": "Connected User Experiences and Telemetry",
+      "category": "Telemetry",
+      "critical": false,
+      "auto_restart": false
+    },
+    {
+      "name": "dmwappushservice",
+      "display": "Device Management Wireless Application Protocol",
+      "category": "Telemetry",
+      "critical": false,
+      "auto_restart": false
+    },
+    {
+      "name": "WMPNetworkSvc",
+      "display": "Windows Media Player Network Sharing Service",
+      "category": "Entertainment",
+      "critical": false,
+      "auto_restart": false
+    },
+    {
+      "name": "WerSvc",
+      "display": "Windows Error Reporting",
+      "category": "Telemetry",
+      "critical": false,
+      "auto_restart": false
+    },
+    {
+      "name": "PcaSvc",
+      "display": "Program Compatibility Assistant Service",
+      "category": "System",
+      "critical": false,
+      "auto_restart": false
+    },
+    {
+      "name": "XblGameSave",
+      "display": "Xbox Live Game Save",
+      "category": "Games",
+      "critical": false,
+      "auto_restart": false
+    },
+    {
+      "name": "XblAuthManager",
+      "display": "Xbox Live Authentication Manager",
+      "category": "Games",
+      "critical": false,
+      "auto_restart": false
+    },
+    {
+      "name": "MapsBroker",
+      "display": "Maps Broker Service",
+      "category": "Maps",
+      "critical": false,
+      "auto_restart": false
+    },
+    {
+      "name": "WSearch",
+      "display": "Windows Search",
+      "category": "Search",
+      "critical": false,
+      "auto_restart": true
+    }
+  ]
+}
