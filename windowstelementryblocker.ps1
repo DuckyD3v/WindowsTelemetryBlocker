@@ -2,7 +2,7 @@
 # Windows Telemetry Blocker
 # Main Script
 # ============================================================================
-# Script Version: 1.0 (presnapshot)
+# Script Version: 1.0
 # Description: Comprehensive toolkit to disable Windows telemetry and enhance
 #              privacy on Windows 10 and 11
 # ============================================================================
@@ -191,7 +191,7 @@ if ($handledSpecial) {
 
 #region Script Initialization
 # Script version
-$ScriptVersion = '1.0 (presnapshot)'
+$ScriptVersion = '1.0'
 
 # Display banner
 Write-Host "===============================" -ForegroundColor Cyan
