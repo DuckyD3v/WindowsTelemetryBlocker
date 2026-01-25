@@ -336,7 +336,7 @@ function Update-Script {
     Write-Host "Fetching latest version from GitHub..." -ForegroundColor Yellow
     try {
         # Download the main script
-        $mainUrl = "$GitHubRepo/raw/main/windowstelementryblocker.ps1"
+        $mainUrl = "$GitHubRepo/raw/main/windowstelemetryblocker.ps1"
         $tempMain = Join-Path $PSScriptRoot "temp_main.ps1"
         Invoke-WebRequest -Uri $mainUrl -OutFile $tempMain -ErrorAction Stop
 
