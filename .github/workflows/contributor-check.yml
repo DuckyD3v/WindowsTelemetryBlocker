@@ -30,7 +30,12 @@ jobs:
     - name: Analyze Changed Files
       shell: pwsh
       run: |
-        $changedFiles = git diff --name-only origin/main...HEAD
+        if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+          $baseRef = $env:GITHUB_BASE_REF
+          $changedFiles = git diff --name-only "origin/$baseRef"
+        } else {
+          $changedFiles = git diff --name-only HEAD~1
+        }
         Write-Host "Changed files:"
         $changedFiles | ForEach-Object { Write-Host "  $_" }
         
@@ -53,7 +58,12 @@ jobs:
     - name: Check for Suspicious Additions
       shell: pwsh
       run: |
-        $addedFiles = git diff --name-only --diff-filter=A origin/main...HEAD
+        if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+          $baseRef = $env:GITHUB_BASE_REF
+          $addedFiles = git diff --name-only --diff-filter=A "origin/$baseRef"
+        } else {
+          $addedFiles = git diff --name-only --diff-filter=A HEAD~1
+        }
         $suspicious = @()
         foreach ($file in $addedFiles) {
           # Check for suspicious file types or locations
@@ -74,7 +84,12 @@ jobs:
     - name: Check for Large File Additions
       shell: pwsh
       run: |
-        $addedFiles = git diff --name-only --diff-filter=A origin/main...HEAD
+        if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+          $baseRef = $env:GITHUB_BASE_REF
+          $addedFiles = git diff --name-only --diff-filter=A "origin/$baseRef"
+        } else {
+          $addedFiles = git diff --name-only --diff-filter=A HEAD~1
+        }
         $largeFiles = @()
         foreach ($file in $addedFiles) {
           if (Test-Path $file) {
@@ -94,7 +109,12 @@ jobs:
     - name: Validate Code Style Consistency
       shell: pwsh
       run: |
-        $changedScripts = git diff --name-only origin/main...HEAD | Where-Object { $_ -like '*.ps1' }
+        if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+          $baseRef = $env:GITHUB_BASE_REF
+          $changedScripts = git diff --name-only "origin/$baseRef" | Where-Object { $_ -like '*.ps1' }
+        } else {
+          $changedScripts = git diff --name-only HEAD~1 | Where-Object { $_ -like '*.ps1' }
+        }
         $styleIssues = @()
         foreach ($script in $changedScripts) {
           if (Test-Path $script) {
@@ -123,7 +143,12 @@ jobs:
     - name: Check for Test Coverage
       shell: pwsh
       run: |
-        $changedScripts = git diff --name-only origin/main...HEAD | Where-Object { $_ -like '*.ps1' -and $_ -notlike '*test*.ps1' }
+        if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+          $baseRef = $env:GITHUB_BASE_REF
+          $changedScripts = git diff --name-only "origin/$baseRef" | Where-Object { $_ -like '*.ps1' -and $_ -notlike '*test*.ps1' }
+        } else {
+          $changedScripts = git diff --name-only HEAD~1 | Where-Object { $_ -like '*.ps1' -and $_ -notlike '*test*.ps1' }
+        }
         if ($changedScripts.Count -gt 0) {
           Write-Host "[INFO] Changed scripts (consider adding tests):"
           $changedScripts | ForEach-Object { Write-Host "  $_" }
