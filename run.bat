@@ -150,8 +150,8 @@ echo ======================================================================
 echo.
 echo EXECUTION MODES:
 echo.
-echo  [1] v1.0 GUI Launcher (NEW - Recommended)
-echo      Modern interface with monitoring and scheduling
+echo  [1] v1.0 Launcher (NEW - Recommended)
+echo      Modern interface with more advanced options
 echo.
 echo  [2] v0.9 Interactive Script
 echo      Classic interactive telemetry blocker
@@ -161,7 +161,7 @@ echo.
 echo  [3] Rollback (Undo recent changes)
 echo      Restore services and registry to previous state
 echo.
-echo  [4] System Restore (Full recovery)
+echo  [4] System Restore (Only use if rollback fails to recover)
 echo      Use Windows System Restore point
 echo.
 echo  [5] Exit
