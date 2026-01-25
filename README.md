@@ -1,4 +1,4 @@
-# 🛡️ Windows Telemetry Blocker
+# Windows Telemetry Blocker
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PowerShell](https://img.shields.io/badge/PowerShell-%3E%3D5.1-blue)](https://github.com/PowerShell/PowerShell)
@@ -8,26 +8,32 @@
 [![Last Commit](https://img.shields.io/github/last-commit/N0tHorizon/WindowsTelemetryBlocker)](https://github.com/N0tHorizon/WindowsTelemetryBlocker/commits/main)
 [![Code Size](https://img.shields.io/github/languages/code-size/N0tHorizon/WindowsTelemetryBlocker)](https://github.com/N0tHorizon/WindowsTelemetryBlocker)
 
-A lightweight, open-source toolkit to disable Windows telemetry and enhance privacy on Windows 10 and 11 using PowerShell scripts. Inspired by tools like ShutUp10++, but fully transparent, modular, and scriptable.
+A comprehensive, open-source toolkit to disable Windows telemetry and enhance privacy on Windows 10 and 11. Built with PowerShell, fully transparent, modular, and scriptable. Includes GUI, scheduling, monitoring, and advanced filtering capabilities.
 
-## ✨ Features
+## Features
 
--  **Disable Windows Telemetry**: Blocks data collection and reporting to Microsoft.
--  **Block Feedback & Advertising**: Prevents feedback prompts and advertising ID usage.
--  **Stop Unnecessary Services**: Disables telemetry-related services like DiagTrack, Xbox services, etc.
--  **Remove Bloatware**: Optionally removes pre-installed apps and disables background apps.
--  **Interactive Module Selection**: Choose which modules to run via CLI or GUI-like menu.
--  **Easy Rollback**: Revert changes with dedicated rollback scripts.
--  **Advanced Logging**: Comprehensive logs, error tracking, and execution statistics.
--  **Modular Design**: Independent modules for telemetry, services, apps, and misc tweaks.
--  **System Restore Points**: Automatic creation before changes for safety.
--  **Multiple Execution Modes**: Interactive, batch, dry-run, and custom profiles.
--  **Audit Logging**: Logs to Windows Event Viewer for compliance.
--  **Auto-Update**: Fetch latest versions from GitHub.
--  **Integrity Checks**: Verifies script and module integrity.
--  **Detailed Reports**: Markdown reports of changes and execution results.
+- **Disable Windows Telemetry** - Blocks data collection and reporting to Microsoft
+- **Block Feedback & Advertising** - Prevents feedback prompts and advertising ID usage
+- **Stop Unnecessary Services** - Disables telemetry-related services like DiagTrack, Xbox services, etc.
+- **Remove Bloatware** - Optionally removes pre-installed apps and disables background apps
+- **Interactive Module Selection** - Choose which modules to run via CLI or GUI-like menu
+- **Modern GUI** - Windows Forms-based interface with tabbed navigation
+- **Data Binding** - Real-time synchronization between UI and configuration
+- **Task Scheduling** - Schedule automated telemetry blocking with 6 schedule types
+- **Advanced Filtering** - Regex-based filtering system with custom rules
+- **Real-time Monitoring** - Registry and service change detection with alerts
+- **Dashboard** - Monitoring dashboard with statistics and notifications
+- **Easy Rollback** - Revert changes with dedicated rollback scripts
+- **Advanced Logging** - Comprehensive logs, error tracking, and statistics
+- **Modular Design** - 22 independent modules for different functionality
+- **System Restore Points** - Automatic creation before changes for safety
+- **Multiple Execution Modes** - Interactive, batch, dry-run, and custom profiles
+- **Audit Logging** - Logs to Windows Event Viewer for compliance
+- **Auto-Update** - Fetch latest versions from GitHub
+- **Integrity Checks** - Verifies script and module integrity
+- **Detailed Reports** - Markdown reports of changes and execution results
 
-## 🚀 Quick Start
+## Quick Start
 
 1. **Download**: Clone or download the repository.
 2. **Run as Administrator**: Right-click `run.bat` and select "Run as administrator".
@@ -38,7 +44,7 @@ A lightweight, open-source toolkit to disable Windows telemetry and enhance priv
    - **Custom**: Select specific modules.
 4. **Review Logs**: Check `telemetry-blocker.log` and `telemetry-blocker-report.md` for results.
 
-## 📦 Installation
+## Installation
 
 No installation required! Simply download the repository and run `run.bat` as administrator.
 
@@ -49,7 +55,7 @@ No installation required! Simply download the repository and run `run.bat` as ad
 
 The launcher (`run.bat`) will automatically check for prerequisites and attempt self-healing if files are missing.
 
-## 📋 Usage
+## Usage
 
 ### Launcher (run.bat) - Recommended
 
@@ -99,7 +105,7 @@ Run directly with parameters:
 
 Dependencies are resolved automatically.
 
-## 🧩 Modules
+## Modules
 
 | Module | Description | Rollback Available |
 |--------|-------------|-------------------|
@@ -135,7 +141,7 @@ Disables and stops the following services:
 - Disables CEIP in `HKLM:\SOFTWARE\Microsoft\SQMClient\Windows`
 - Disables Windows Error Reporting in `HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting`
 
-## ⏪ Rollback
+## Rollback
 
 Rollback scripts are available for most modules in `modules/*-rollback.ps1`.
 
