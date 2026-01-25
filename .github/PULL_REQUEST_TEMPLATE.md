@@ -30,9 +30,25 @@
 - [ ] I followed all the contributing guidelines (Read [CONTRIBUTING.md](CONTRIBUTING.md))
 - [ ] None of the changes I pushed contain hard-coded secrets or private information
 - [ ] All of my user-specific files have been deleted properly. (Logs, todo, ect)
+- [ ] Code follows style guidelines
+- [ ] Documentation updated
+- [ ] No hardcoded secrets
+- [ ] Error handling implemented
+- [ ] Logging added
+- [ ] Rollback script created (if needed)
+- [ ] Dependencies documented
 
 ## Testing
-<!-- Explain how you tested this -->
+- [ ] Script runs without errors
+- [ ] Dry-run mode works
+- [ ] Actual execution works
+- [ ] Rollback works (if applicable)
+- [ ] Logging works correctly
+- [ ] Error handling works
+- [ ] No hardcoded secrets
+- [ ] Code follows style guidelines
+- [ ] All tests pass
+<!-- OPTIONAL: Explain how you tested this -->
 
 ## Screenshots & Other Notes
 <!-- OPTIONAL: Paste screenshots here of you PR changes in action, or add more details that dont fit in any other area -->
