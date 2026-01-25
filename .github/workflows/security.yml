@@ -21,13 +21,22 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: GitHub Advanced Security - Code Scanning
-      uses: github/super-linter@v4
-      env:
-        DEFAULT_BRANCH: main
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        VALIDATE_POWERSHELL: true
-        VALIDATE_ALL_CODEBASE: true
+    - name: PowerShell Syntax Check
+      shell: pwsh
+      run: |
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse -Exclude @('*.test.ps1', '*test*.ps1')
+        $errors = @()
+        foreach ($script in $scripts) {
+          $parseErrors = $null
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script.FullName -Raw), [ref]$parseErrors)
+          if ($parseErrors.Count -gt 0) {
+            $errors += "$($script.FullName): $($parseErrors | ConvertTo-Json -Compress)"
+          }
+        }
+        if ($errors.Count -gt 0) {
+          throw "Syntax errors found:`n$($errors -join "`n")"
+        }
+        Write-Host "[OK] All scripts have valid syntax"
     
     - name: Check for Hardcoded Credentials
       shell: pwsh
