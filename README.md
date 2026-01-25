@@ -181,16 +181,6 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - Test thoroughly
 - Submit a pull request
 
-### Developer Resources
-
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
-- **[MODULE_TEMPLATE.md](MODULE_TEMPLATE.md)** - Template for creating new modules
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development workflow guide
-- **[SCALABILITY.md](SCALABILITY.md)** - Architecture and scalability guide
-- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Project structure documentation
-- **[VERSIONING.md](VERSIONING.md)** - Version management guide
-- **[QUICK_START.md](QUICK_START.md)** - Quick reference guide
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
