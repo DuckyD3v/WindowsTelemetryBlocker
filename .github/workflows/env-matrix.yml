@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: ["🌕Nextgen", "📦Current"]
 
+permissions:
+  contents: read
+
 jobs:
   matrix-test:
     name: "env: ${{ matrix.os }} | Shell: ${{ matrix.shell }} | Admin: ${{ matrix.admin }} | Locale: ${{ matrix.locale }}"
