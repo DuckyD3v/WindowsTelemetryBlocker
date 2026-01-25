@@ -37,7 +37,7 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 ### File Organization
 
-- **Main Script**: `windowstelementryblocker.ps1` - Core execution logic
+- **Main Script**: `windowstelemetryblocker.ps1` - Core execution logic
 - **Modules**: `modules/*.ps1` - Individual functionality modules
 - **Rollback Scripts**: `modules/*-rollback.ps1` - Rollback functionality
 - **v1.0 Features**: `v1.0/` - GUI, scheduler, monitor features
@@ -105,7 +105,7 @@ function Disable-Feature {
 
 ### Step 3: Add to Main Script
 
-Update `windowstelementryblocker.ps1`:
+Update `windowstelemetryblocker.ps1`:
 
 1. Add to `$moduleList`:
    ```powershell
@@ -153,7 +153,7 @@ Create `modules/yourmodule-rollback.ps1`:
 
 2. **Dry-Run Test**: Test with `-DryRun` parameter
    ```powershell
-   .\windowstelementryblocker.ps1 -Modules yourmodule -DryRun
+   .\windowstelemetryblocker.ps1 -Modules yourmodule -DryRun
    ```
 
 3. **VM Test**: Always test on a VM before production use
@@ -231,7 +231,7 @@ When adding new v1.0 features:
 
 ### Version Management
 
-- Update script version in `windowstelementryblocker.ps1`
+- Update script version in `windowstelemetryblocker.ps1`
 - Update `CHANGELOG.md` with changes
 - Tag releases appropriately
 

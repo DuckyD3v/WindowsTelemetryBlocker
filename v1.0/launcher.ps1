@@ -22,7 +22,7 @@ $integrationPath = Join-Path $sharedPath "integration.ps1"
 
 # Get v0.9 script path (parent directory)
 $repoRoot = Split-Path -Parent $scriptRoot
-$v09ScriptPath = Join-Path $repoRoot "windowstelementryblocker.ps1"
+$v09ScriptPath = Join-Path $repoRoot "windowstelemetryblocker.ps1"
 
 # Source utilities
 $utilsPath = Join-Path $sharedPath "utils.ps1"

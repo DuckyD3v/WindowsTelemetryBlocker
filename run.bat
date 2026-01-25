@@ -2,7 +2,7 @@
 REM ============================================================================
 REM Windows Telemetry Blocker Launcher
 REM ============================================================================
-REM Version: 1.5
+REM Version: 1.5h1
 REM Description: Batch launcher for Windows Telemetry Blocker with menu system
 REM ============================================================================
 
@@ -12,9 +12,9 @@ REM ============================================================================
 REM Configuration and Path Setup
 REM ============================================================================
 set "SCRIPT_DIR=%~dp0"
-set "LAUNCHER_VERSION=1.5"
+set "LAUNCHER_VERSION=1.5h1"
 set "LOG_FILE=%SCRIPT_DIR%telemetry-blocker.log"
-set "PS_SCRIPT=%SCRIPT_DIR%windowstelementryblocker.ps1"
+set "PS_SCRIPT=%SCRIPT_DIR%windowstelemetryblocker.ps1"
 set "SAFETY_LOG=%SCRIPT_DIR%telemetry-blocker-safety.log"
 set "LAST_EXECUTION_STATE=%SCRIPT_DIR%.last-execution-state"
 set "V1_LAUNCHER=%SCRIPT_DIR%v1.0\launcher.ps1"
@@ -150,8 +150,8 @@ echo ======================================================================
 echo.
 echo EXECUTION MODES:
 echo.
-echo  [1] v1.0 GUI Launcher (NEW - Recommended)
-echo      Modern interface with monitoring and scheduling
+echo  [1] v1.0 Launcher (NEW - Recommended)
+echo      Modern interface with more advanced options
 echo.
 echo  [2] v0.9 Interactive Script
 echo      Classic interactive telemetry blocker
@@ -161,7 +161,7 @@ echo.
 echo  [3] Rollback (Undo recent changes)
 echo      Restore services and registry to previous state
 echo.
-echo  [4] System Restore (Full recovery)
+echo  [4] System Restore (Only use if rollback fails to recover)
 echo      Use Windows System Restore point
 echo.
 echo  [5] Exit

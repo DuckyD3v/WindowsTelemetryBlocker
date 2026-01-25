@@ -2,10 +2,6 @@
 # Windows Telemetry Blocker
 # Main Script
 # ============================================================================
-# Script Version: 1.0
-# Description: Comprehensive toolkit to disable Windows telemetry and enhance
-#              privacy on Windows 10 and 11
-# ============================================================================
 
 #region Parameters
 # Parameters must be at the top of the script (after comments)
@@ -336,7 +332,7 @@ function Update-Script {
     Write-Host "Fetching latest version from GitHub..." -ForegroundColor Yellow
     try {
         # Download the main script
-        $mainUrl = "$GitHubRepo/raw/main/windowstelementryblocker.ps1"
+        $mainUrl = "$GitHubRepo/raw/main/windowstelemetryblocker.ps1"
         $tempMain = Join-Path $PSScriptRoot "temp_main.ps1"
         Invoke-WebRequest -Uri $mainUrl -OutFile $tempMain -ErrorAction Stop
 
@@ -357,7 +353,7 @@ function Update-Script {
         $confirm = Read-Host "Downloaded updates. Overwrite files? (Y/N)"
         if ($confirm -eq 'Y') {
             # Overwrite
-            Move-Item $tempMain (Join-Path $PSScriptRoot "windowstelementryblocker.ps1") -Force -ErrorAction Stop
+            Move-Item $tempMain (Join-Path $PSScriptRoot "windowstelemetryblocker.ps1") -Force -ErrorAction Stop
             foreach ($file in $files) {
                 if ($file.name -like "*.ps1") {
                     $tempFile = Join-Path $PSScriptRoot ("temp_{0}" -f $file.name)

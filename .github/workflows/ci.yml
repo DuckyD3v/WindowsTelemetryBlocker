@@ -49,7 +49,7 @@ jobs:
     - name: Check Script Structure (v0.9)
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content windowstelemetryblocker.ps1 -Raw
         $requiredSections = @(
           'region Parameters',
           'region Global State',
@@ -198,7 +198,7 @@ jobs:
     - name: Validate Parameter Block Position
       shell: pwsh
       run: |
-        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $main = Get-Content windowstelemetryblocker.ps1 -Raw
         # Check that param() is near the top (after comments, before other code)
         $lines = $main -split "`n"
         $paramLine = -1
@@ -230,7 +230,7 @@ jobs:
       shell: pwsh
       run: |
         $required = @(
-          'windowstelementryblocker.ps1',
+          'windowstelemetryblocker.ps1',
           'run.bat',
           'README.md',
           'LICENSE',
