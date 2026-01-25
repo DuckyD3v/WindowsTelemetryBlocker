@@ -44,33 +44,12 @@ A comprehensive, open-source toolkit to disable Windows telemetry and enhance pr
    - **Custom**: Select specific modules.
 4. **Review Logs**: Check `telemetry-blocker.log` and `telemetry-blocker-report.md` for results.
 
-## Installation
-
-No installation required! Simply download the repository and run `run.bat` as administrator.
-
 ### Prerequisites
 - Windows 10 version 2004 or later / Windows 11.
 - PowerShell 5.1 or later (PowerShell Core recommended).
 - Administrative privileges.
 
 The launcher (`run.bat`) will automatically check for prerequisites and attempt self-healing if files are missing.
-
-## Usage
-
-### Launcher (run.bat) - Recommended
-
-The batch file provides a user-friendly menu:
-
-1. **Minimal Profile**: Runs telemetry module only.
-2. **Balanced Profile**: Runs telemetry and services modules.
-3. **Max Privacy Profile**: Runs all modules.
-4. **Custom Profile**: Interactive module selection.
-5. **Run Interactive Script**: Full PowerShell script with prompts.
-6. **Restore via Rollback**: Revert changes using rollback scripts.
-7. **Restore via System Restore**: Use Windows System Restore.
-8. **Update Script**: Download latest versions.
-9. **Self-Healing Mode**: Re-download missing files.
-10. **Exit**.
 
 ### PowerShell Script (windowstelementryblocker.ps1)
 
@@ -79,22 +58,7 @@ Run directly with parameters:
 ```powershell
 .\windowstelementryblocker.ps1 -All -EnableAuditLog
 ```
-
-#### Console Parameters (For running in a console without run.bat)
-
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `-All` | Run all modules | `.\script.ps1 -All` |
-| `-Modules <list>` | Specify modules (comma-separated) | `.\script.ps1 -Modules telemetry,services` |
-| `-Exclude <list>` | Exclude specific modules | `.\script.ps1 -All -Exclude apps` |
-| `-Interactive` | Interactive mode with prompts | `.\script.ps1 -Interactive` |
-| `-DryRun` | Preview changes without applying | `.\script.ps1 -All -DryRun` |
-| `-WhatIf` | Alias for DryRun | `.\script.ps1 -WhatIf` |
-| `-RollbackOnFailure` | Auto-rollback if a module fails | `.\script.ps1 -All -RollbackOnFailure` |
-| `-Rollback` | Run rollback for all modules | `.\script.ps1 -Rollback` |
-| `-RestorePoint` | Restore via system restore/registry backup | `.\script.ps1 -RestorePoint` |
-| `-Update` | Check and update script/modules | `.\script.ps1 -Update` |
-| `-EnableAuditLog` | Log to Windows Event Viewer | `.\script.ps1 -All -EnableAuditLog` |
+## Usage
 
 #### Module Dependencies
 
