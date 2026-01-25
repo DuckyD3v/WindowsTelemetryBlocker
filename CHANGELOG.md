@@ -27,13 +27,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Code organization validation
   - Secret scanning and code injection detection
 
-- **Documentation**: Comprehensive developer documentation
-  - CONTRIBUTING.md - Complete contribution guidelines
-  - MODULE_TEMPLATE.md - Module creation template
-  - SCALABILITY.md - Scalability guide
-  - PROJECT_STRUCTURE.md - Project structure documentation
-  - DEVELOPMENT.md - Development workflow guide
-
 - **Security Enhancements**: Enhanced security for contributions
   - Secret scanning in workflows
   - Code injection detection
