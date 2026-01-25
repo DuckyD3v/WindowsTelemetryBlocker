@@ -1,1 +1,0 @@
-Once we need a image, video, or some other uploadable form of media, this folder will be used.
