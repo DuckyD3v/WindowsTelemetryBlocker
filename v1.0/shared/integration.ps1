@@ -82,7 +82,7 @@ function Execute-Module {
     )
     
     try {
-        Write-Host "`n▶ Executing: $ModuleName" -ForegroundColor Cyan
+        Write-Host "`n[+] Executing: $ModuleName" -ForegroundColor Cyan
         
         # Dot source the module to execute it
         if ($DryRun) {
