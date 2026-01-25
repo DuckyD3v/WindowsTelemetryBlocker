@@ -26,6 +26,8 @@
 - [ ] Docs contain updated information if needed
 
 ### Security
+- [ ] I followed all the contributing guidelines (Read [CONTRIBUTING.md](CONTRIBUTING.md))
+- [] All of my user-specific files have been deleted properly. (Logs, todo, ect)
 - [ ] No hardcoded secrets
 - [ ] Code follows style guidelines
 - [ ] Error handling implemented
