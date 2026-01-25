@@ -3,7 +3,6 @@ REM ============================================================================
 REM Windows Telemetry Blocker Launcher
 REM ============================================================================
 REM Version: 1.5
-REM Phase: 1
 REM Description: Batch launcher for Windows Telemetry Blocker with menu system
 REM ============================================================================
 
@@ -14,7 +13,6 @@ REM Configuration and Path Setup
 REM ============================================================================
 set "SCRIPT_DIR=%~dp0"
 set "LAUNCHER_VERSION=1.5"
-set "PHASE=1"
 set "LOG_FILE=%SCRIPT_DIR%telemetry-blocker.log"
 set "PS_SCRIPT=%SCRIPT_DIR%windowstelementryblocker.ps1"
 set "SAFETY_LOG=%SCRIPT_DIR%telemetry-blocker-safety.log"
@@ -125,7 +123,7 @@ if not exist "%PS_SCRIPT%" (
 )
 
 REM Get script version
-"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content '%PS_SCRIPT%' | Select-String '# Script Version:' | Select-Object -First 1).Line" >temp_version.txt 2>nul
+"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content '%PS_SCRIPT%' | Select-String 'Script Version:' | Select-Object -First 1).Line" >temp_version.txt 2>nul
 if exist temp_version.txt (
     for /f "delims=" %%V in (temp_version.txt) do set "SCRIPT_VERSION=%%V"
     del temp_version.txt
@@ -289,3 +287,4 @@ REM Invalid Choice Handler
 REM ============================================================================
 echo Invalid choice. Please try again.
 goto menu
+

@@ -11,7 +11,15 @@ param(
 )
 
 . "$PSScriptRoot/common.ps1"
-if (-not $global:dryrun) { $global:dryrun = $false }
+# Ensure dryrun is set (check both case variations for compatibility)
+if (-not (Test-Path variable:global:dryrun) -and -not (Test-Path variable:global:DryRun)) {
+    $global:dryrun = $false
+    $global:DryRun = $false
+} elseif (Test-Path variable:global:DryRun) {
+    $global:dryrun = $global:DryRun
+} elseif (Test-Path variable:global:dryrun) {
+    $global:DryRun = $global:dryrun
+}
 
 #region App Configuration
 $appsToRemove = @(
@@ -75,7 +83,12 @@ if ($RemoveBloatware) {
         # Add more bloatware removal commands as needed
     )
     foreach ($bloat in $bloatwareApps) {
-        if ($global:dryrun) {
+        # Check both case variations of dryrun variable
+        $isDryRun = $false
+        if (Test-Path variable:global:dryrun) { $isDryRun = $global:dryrun }
+        if (Test-Path variable:global:DryRun) { $isDryRun = $global:DryRun }
+        
+        if ($isDryRun) {
             Write-Host "[DRY-RUN] Would remove app: $bloat" -ForegroundColor DarkYellow
             Write-ModuleLog "[DRY-RUN] Would remove app: $bloat"
         } else {
@@ -99,7 +112,12 @@ Write-Host "`nRunning Apps Module..." -ForegroundColor Cyan
 $removedApps = @()
 
 foreach ($app in $appsToRemove) {
-    if ($global:dryrun) {
+    # Check both case variations of dryrun variable
+    $isDryRun = $false
+    if (Test-Path variable:global:dryrun) { $isDryRun = $global:dryrun }
+    if (Test-Path variable:global:DryRun) { $isDryRun = $global:DryRun }
+    
+    if ($isDryRun) {
         Write-Host "[DRY-RUN] Would remove app: $app" -ForegroundColor DarkYellow
         Write-ModuleLog "[DRY-RUN] Would remove app: $app"
     } else {

@@ -7,36 +7,8 @@
 #              privacy on Windows 10 and 11
 # ============================================================================
 
-#region Global State and Safety System
-# Global state tracking for safe interruption handling
-$global:CriticalOperationInProgress = $false
-$global:CriticalOperationName = ""
-$global:CriticalOperationStartTime = $null
-$global:CleanupTasks = @()  # Queue of cleanup tasks to execute on exit
-$global:ModulesExecuted = @()  # Track which modules have been executed
-$global:PartialExecutionState = @{}  # Track state of partial operations
-
-# Set up trap handler for interruptions (Ctrl+C)
-trap {
-    Write-Host "`n`n[CRITICAL] Script interrupted!" -ForegroundColor Red
-    if ($global:CriticalOperationInProgress) {
-        Write-Host "[SAFETY] Currently in critical operation: $($global:CriticalOperationName)" -ForegroundColor Yellow
-        Write-Host "[SAFETY] Attempting graceful cleanup..." -ForegroundColor Yellow
-        & Invoke-SafeCleanup
-    }
-    Write-Host "`n[INFO] Executing cleanup tasks..." -ForegroundColor Cyan
-    & Invoke-CleanupTasks
-    Write-Host "[INFO] Emergency exit complete." -ForegroundColor Yellow
-    exit 1
-}
-
-# Register cleanup on script exit
-$ExecutionContext.SessionState.Module.OnRemove = {
-    & Invoke-CleanupTasks
-}
-#endregion
-
 #region Parameters
+# Parameters must be at the top of the script (after comments)
 param(
     [switch]$All,
     [string[]]$Modules,
@@ -50,6 +22,109 @@ param(
     [switch]$Update,
     [switch]$EnableAuditLog
 )
+#endregion
+
+#region Global State and Safety System
+# Global state tracking for safe interruption handling
+$global:CriticalOperationInProgress = $false
+$global:CriticalOperationName = ""
+$global:CriticalOperationStartTime = $null
+$global:CleanupTasks = @()  # Queue of cleanup tasks to execute on exit
+$global:ModulesExecuted = @()  # Track which modules have been executed
+$global:PartialExecutionState = @{}  # Track state of partial operations
+
+#region Path and Configuration Variables (Early - needed for logging)
+# Ensure PSScriptRoot is set correctly
+if (-not $PSScriptRoot) {
+    if ($MyInvocation.MyCommand.Path) {
+        $PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+    } elseif ($MyInvocation.PSScriptRoot) {
+        $PSScriptRoot = $MyInvocation.PSScriptRoot
+    } else {
+        $PSScriptRoot = Split-Path -Parent (Get-Location).Path
+    }
+}
+
+$logFile            = Join-Path $PSScriptRoot "telemetry-blocker.log"
+$errorLogFile       = Join-Path $PSScriptRoot "telemetry-blocker-errors.log"
+$executionStatsFile = Join-Path $PSScriptRoot "telemetry-blocker-stats.log"
+$reportFile         = Join-Path $PSScriptRoot "telemetry-blocker-report.md"
+$modulesDir         = Join-Path $PSScriptRoot "modules"
+$GitHubRepo         = "https://github.com/N0tHorizon/WindowsTelemetryBlocker"
+#endregion
+
+#region Early Logging Functions (Defined before use)
+function Write-Log {
+    param([string]$msg, [switch]$Error)
+    try {
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $entry = "$timestamp $msg"
+        $entry | Out-File -FilePath $logFile -Append -Encoding utf8 -ErrorAction Stop
+        if ($Error) {
+            $entry | Out-File -FilePath $errorLogFile -Append -Encoding utf8 -ErrorAction Stop
+        }
+    } catch {
+        # If logging fails, write minimal host output but don't throw
+        Write-Host ("Logging failure: {0}" -f $_.Exception.Message) -ForegroundColor Red
+    }
+}
+#endregion
+
+# Set up trap handler for interruptions (Ctrl+C) - only catch actual interruptions
+# Note: This trap will catch terminating errors, but we'll handle initialization errors separately
+$script:InitializationComplete = $false
+trap {
+    # Only handle as interruption if initialization is complete, otherwise it's likely an init error
+    if ($script:InitializationComplete) {
+        Write-Host "`n`n[CRITICAL] Script interrupted!" -ForegroundColor Red
+        try {
+            if ($global:CriticalOperationInProgress) {
+                Write-Host "[SAFETY] Currently in critical operation: $($global:CriticalOperationName)" -ForegroundColor Yellow
+                Write-Host "[SAFETY] Attempting graceful cleanup..." -ForegroundColor Yellow
+                if (Get-Command Invoke-SafeCleanup -ErrorAction SilentlyContinue) {
+                    & Invoke-SafeCleanup
+                }
+            }
+            Write-Host "`n[INFO] Executing cleanup tasks..." -ForegroundColor Cyan
+            if (Get-Command Invoke-CleanupTasks -ErrorAction SilentlyContinue) {
+                & Invoke-CleanupTasks
+            } else {
+                Write-Host "[WARN] Cleanup function not available, skipping cleanup tasks" -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "[WARN] Error during cleanup: $_" -ForegroundColor Yellow
+        }
+        Write-Host "[INFO] Emergency exit complete." -ForegroundColor Yellow
+        exit 1
+    } else {
+        # Initialization error - write error and exit
+        Write-Host "`n[ERROR] Script initialization failed: $_" -ForegroundColor Red
+        Write-Host "Error details: $($_.Exception.Message)" -ForegroundColor Red
+        if ($_.ScriptStackTrace) {
+            Write-Host "Stack trace: $($_.ScriptStackTrace)" -ForegroundColor Gray
+        }
+        exit 1
+    }
+}
+
+# Register cleanup on script exit (only if running as module)
+# Note: OnRemove is only available for modules, not scripts
+try {
+    if ($ExecutionContext.SessionState.Module -and $ExecutionContext.SessionState.Module.OnRemove) {
+        $ExecutionContext.SessionState.Module.OnRemove = {
+            if (Get-Command Invoke-CleanupTasks -ErrorAction SilentlyContinue) {
+                try {
+                    & Invoke-CleanupTasks
+                } catch {
+                    # Silently fail during module removal
+                }
+            }
+        }
+    }
+} catch {
+    # OnRemove not available (running as script, not module) - this is fine
+    # We'll rely on the trap handler and explicit cleanup calls instead
+}
 #endregion
 
 #region Special Parameter Handling
@@ -138,32 +213,12 @@ $VerbosePreference = 'Continue'
 Write-Host ("Script started at: {0}" -f (Get-Date)) -ForegroundColor Yellow
 Write-Host ("Running from: {0}" -f $PSScriptRoot) -ForegroundColor Yellow
 Write-Host "================================`n"
+
+# Mark initialization as complete - trap handler will now treat errors as interruptions
+$script:InitializationComplete = $true
 #endregion
 
-#region Path and Configuration Variables
-$logFile            = Join-Path $PSScriptRoot "telemetry-blocker.log"
-$errorLogFile       = Join-Path $PSScriptRoot "telemetry-blocker-errors.log"
-$executionStatsFile = Join-Path $PSScriptRoot "telemetry-blocker-stats.log"
-$reportFile         = Join-Path $PSScriptRoot "telemetry-blocker-report.md"
-$modulesDir         = Join-Path $PSScriptRoot "modules"
-$GitHubRepo         = "https://github.com/N0tHorizon/WindowsTelemetryBlocker"
-#endregion
-
-#region Logging Functions
-function Write-Log {
-    param([string]$msg, [switch]$Error)
-    try {
-        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-        $entry = "$timestamp $msg"
-        $entry | Out-File -FilePath $logFile -Append -Encoding utf8 -ErrorAction Stop
-        if ($Error) {
-            $entry | Out-File -FilePath $errorLogFile -Append -Encoding utf8 -ErrorAction Stop
-        }
-    } catch {
-        # If logging fails, write minimal host output but don't throw
-        Write-Host ("Logging failure: {0}" -f $_.Exception.Message) -ForegroundColor Red
-    }
-}
+#region Logging Functions (Additional)
 
 function Write-Stats {
     param([string]$msg)
@@ -325,30 +380,40 @@ function Update-Script {
 
 function Export-RegistryBackup {
     try {
-        if (-not (Test-Path $modulesDir)) { New-Item -ItemType Directory -Path $modulesDir | Out-Null }
+        Write-Host "Preparing registry backup..." -ForegroundColor Cyan
+        if (-not (Test-Path $modulesDir)) { 
+            New-Item -ItemType Directory -Path $modulesDir -Force | Out-Null 
+            Write-Log "Created modules directory: $modulesDir"
+        }
         $backupDir = Join-Path $PSScriptRoot "registry-backups"
-        if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir | Out-Null }
+        if (-not (Test-Path $backupDir)) { 
+            New-Item -ItemType Directory -Path $backupDir -Force | Out-Null 
+            Write-Log "Created backup directory: $backupDir"
+        }
         $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
         $backupFile = Join-Path $backupDir ("regbackup_{0}.reg" -f $timestamp)
         Write-Host ("Exporting registry backup to {0} ..." -f $backupFile) -ForegroundColor Cyan
-        # Show a simple status bar while reg.exe runs
-        $script:backupJob = Start-Job -ScriptBlock { param($file) reg.exe export "HKLM" $file /y | Out-Null } -ArgumentList $backupFile
-        $status = @('|','/','-','\')
-        $i = 0
-        while ($backupJob.State -eq 'Running') {
-            Write-Host -NoNewline ("`r[EXPORTING] Please wait " + $status[$i % $status.Length])
-            Start-Sleep -Milliseconds 200
-            $i++
-            $backupJob = Get-Job -Id $backupJob.Id
+        Write-Log ("Starting registry backup to: {0}" -f $backupFile)
+        
+        # Use reg.exe directly instead of background job for better error handling
+        $regProcess = Start-Process -FilePath "reg.exe" -ArgumentList "export", "HKLM", "`"$backupFile`"", "/y" -Wait -PassThru -NoNewWindow
+        
+        if ($regProcess.ExitCode -eq 0) {
+            if (Test-Path $backupFile) {
+                $fileSize = (Get-Item $backupFile).Length
+                Write-Host ("[OK] Registry backup complete. Size: {0:N0} bytes" -f $fileSize) -ForegroundColor Green
+                Write-Log ("Registry backup exported successfully to {0} (Size: {1:N0} bytes)" -f $backupFile, $fileSize)
+            } else {
+                throw "Backup file was not created despite successful exit code"
+            }
+        } else {
+            throw "reg.exe exited with code: $($regProcess.ExitCode)"
         }
-        Receive-Job -Id $backupJob.Id | Out-Null
-        Remove-Job -Id $backupJob.Id | Out-Null
-        Write-Host "`r[OK] Registry backup complete.           " -ForegroundColor Green
-        Write-Log ("Registry backup exported to {0}" -f $backupFile)
     } catch {
         $msg = if ($_.Exception) { $_.Exception.Message } else { $_.ToString() }
         Write-Host ("[ERROR] Registry backup failed: {0}" -f $msg) -ForegroundColor Red
         Write-Log ("Registry backup failed: {0}" -f $msg) -Error
+        Write-Host "[WARN] Continuing without registry backup. Changes will still be made." -ForegroundColor Yellow
     }
 }
 
@@ -500,7 +565,12 @@ if (-not (Test-Path $modulesDir)) {
 }
 
 # Export registry backup before changes
-if (-not $DryRun) { Export-RegistryBackup }
+if (-not $DryRun) {
+    Write-Host "`n=== Creating Registry Backup ===" -ForegroundColor Cyan
+    Export-RegistryBackup
+} else {
+    Write-Host "`n[DRY-RUN] Skipping registry backup" -ForegroundColor DarkYellow
+}
 
 # Check for pending reboot
 if (Test-PendingReboot) {
@@ -640,7 +710,13 @@ Write-Log ("Rollback coverage: {0}" -f (($rollbackCoverage.GetEnumerator() | For
 #endregion
 
 #region Module Execution
+# Set global dryrun variable for all modules before execution (set both case variations for compatibility)
+$global:DryRun = $DryRun
+$global:dryrun = $DryRun
+
 Write-Host "`n=== Starting Module Execution ===" -ForegroundColor Cyan
+Write-Host ("Modules to execute: {0}" -f ($toRunResolved -join ', ')) -ForegroundColor Cyan
+Write-Host ("DryRun mode: {0}" -f $DryRun) -ForegroundColor $(if ($DryRun) { "Yellow" } else { "Green" })
 $summary = @()
 $moduleResults = @{}
 $executedModules = @()
@@ -654,7 +730,7 @@ foreach ($mod in $toRunResolved) {
     try {
         $modulePath = Join-Path $modulesDir ("{0}.ps1" -f $mod)
         if (-not (Test-Path $modulePath)) { throw [System.IO.FileNotFoundException]("Module file not found: $modulePath") }
-        $global:DryRun = $DryRun
+        Write-Host ("Module path: {0}" -f $modulePath) -ForegroundColor Gray
         if ($DryRun) {
             Write-Host ("[DRY-RUN] Would run module: {0} ({1})" -f $mod, $modulePath) -ForegroundColor DarkYellow
             Write-Log ("[DRY-RUN] Would run module: {0}" -f $mod)
@@ -662,8 +738,10 @@ foreach ($mod in $toRunResolved) {
             $moduleResults[$mod] = @{ Status='DRY-RUN'; Start=$moduleStart; End=(Get-Date) }
         } else {
             # Dot-source the module to run its logic
+            Write-Host ("Executing module: {0}" -f $mod) -ForegroundColor Cyan
             $result = . $modulePath
             $executedModules += $mod
+            Write-Host ("Module {0} returned: {1}" -f $mod, $result) -ForegroundColor Gray
             if ($result -eq $false) {
                 Write-Host ("[ERROR] Module {0} reported failure" -f $mod) -ForegroundColor Red
                 Write-Log ("Module {0} reported failure" -f $mod) -Error

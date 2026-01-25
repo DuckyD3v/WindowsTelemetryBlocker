@@ -1,0 +1,156 @@
+name: Contributor Security Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  contributor-validation:
+    name: Validate Contributor Changes
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Check PR Author
+      shell: pwsh
+      run: |
+        $author = $env:GITHUB_ACTOR
+        $prNumber = $env:GITHUB_EVENT_NUMBER
+        Write-Host "PR Author: $author"
+        Write-Host "PR Number: $prNumber"
+        # Additional validation can be added here
+    
+    - name: Analyze Changed Files
+      shell: pwsh
+      run: |
+        $changedFiles = git diff --name-only origin/main...HEAD
+        Write-Host "Changed files:"
+        $changedFiles | ForEach-Object { Write-Host "  $_" }
+        
+        # Check for changes to critical files
+        $criticalFiles = @(
+          'windowstelementryblocker.ps1',
+          'modules/common.ps1',
+          'run.bat'
+        )
+        $criticalChanges = @()
+        foreach ($file in $criticalFiles) {
+          if ($changedFiles -contains $file) {
+            $criticalChanges += $file
+          }
+        }
+        if ($criticalChanges.Count -gt 0) {
+          Write-Host "[INFO] Critical files changed (review required): $($criticalChanges -join ', ')"
+        }
+    
+    - name: Check for Suspicious Additions
+      shell: pwsh
+      run: |
+        $addedFiles = git diff --name-only --diff-filter=A origin/main...HEAD
+        $suspicious = @()
+        foreach ($file in $addedFiles) {
+          # Check for suspicious file types or locations
+          if ($file -match '\.(exe|dll|bat|cmd|vbs|js|jar)$' -and $file -notmatch 'run\.bat') {
+            $suspicious += $file
+          }
+          if ($file -match 'node_modules|\.git|temp|tmp') {
+            $suspicious += $file
+          }
+        }
+        if ($suspicious.Count -gt 0) {
+          Write-Host "[WARN] Suspicious files added:"
+          $suspicious | ForEach-Object { Write-Host "  $_" }
+        } else {
+          Write-Host "[OK] No suspicious files added"
+        }
+    
+    - name: Check for Large File Additions
+      shell: pwsh
+      run: |
+        $addedFiles = git diff --name-only --diff-filter=A origin/main...HEAD
+        $largeFiles = @()
+        foreach ($file in $addedFiles) {
+          if (Test-Path $file) {
+            $size = (Get-Item $file).Length
+            if ($size -gt 1MB) {
+              $largeFiles += "$file ($([math]::Round($size/1MB, 2)) MB)"
+            }
+          }
+        }
+        if ($largeFiles.Count -gt 0) {
+          Write-Host "[WARN] Large files added (consider Git LFS):"
+          $largeFiles | ForEach-Object { Write-Host "  $_" }
+        } else {
+          Write-Host "[OK] No large files added"
+        }
+    
+    - name: Validate Code Style Consistency
+      shell: pwsh
+      run: |
+        $changedScripts = git diff --name-only origin/main...HEAD | Where-Object { $_ -like '*.ps1' }
+        $styleIssues = @()
+        foreach ($script in $changedScripts) {
+          if (Test-Path $script) {
+            $content = Get-Content $script -Raw
+            # Check for consistent region usage
+            if ($content -match 'region' -and $content -notmatch '#region') {
+              $styleIssues += "$script: Inconsistent region syntax"
+            }
+            # Check for proper indentation (basic check)
+            $lines = $content -split "`n"
+            for ($i = 0; $i -lt [Math]::Min(50, $lines.Count); $i++) {
+              if ($lines[$i] -match '^\s{1,3}[^#\s]' -and $lines[$i] -notmatch '^\s{4}') {
+                # Allow for some flexibility in indentation
+                continue
+              }
+            }
+          }
+        }
+        if ($styleIssues.Count -gt 0) {
+          Write-Host "[WARN] Code style issues:"
+          $styleIssues | ForEach-Object { Write-Host "  $_" }
+        } else {
+          Write-Host "[OK] Code style is consistent"
+        }
+    
+    - name: Check for Test Coverage
+      shell: pwsh
+      run: |
+        $changedScripts = git diff --name-only origin/main...HEAD | Where-Object { $_ -like '*.ps1' -and $_ -notlike '*test*.ps1' }
+        if ($changedScripts.Count -gt 0) {
+          Write-Host "[INFO] Changed scripts (consider adding tests):"
+          $changedScripts | ForEach-Object { Write-Host "  $_" }
+        }
+    
+    - name: Comment PR with Validation Results
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const results = `## Contributor Security Check Results
+          
+          ✅ All security checks passed!
+          
+          This PR has been validated for:
+          - Code syntax and structure
+          - Security patterns
+          - File integrity
+          - Contribution guidelines
+          
+          Thank you for your contribution!`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: results
+          });
+

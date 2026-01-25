@@ -1,0 +1,25 @@
+# Code Owners
+# This file defines code ownership for automatic PR review requests
+
+# Core scripts
+windowstelementryblocker.ps1 @N0tHorizon
+run.bat @N0tHorizon
+
+# Modules
+modules/ @N0tHorizon
+
+# v1.0 Features
+v1.0/ @N0tHorizon
+
+# Documentation
+*.md @N0tHorizon
+README.md @N0tHorizon
+CONTRIBUTING.md @N0tHorizon
+
+# Workflows
+.github/workflows/ @N0tHorizon
+
+# Configuration
+.gitignore @N0tHorizon
+LICENSE @N0tHorizon
+

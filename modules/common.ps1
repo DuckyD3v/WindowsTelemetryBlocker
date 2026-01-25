@@ -32,7 +32,12 @@ function Set-RegistryValue {
         [ValidateSet("DWord","QWord","String","ExpandString","Binary","MultiString")]
         [string]$Type = "DWord"
     )
-    if ($global:dryrun) {
+    # Check both case variations of dryrun variable
+    $isDryRun = $false
+    if (Test-Path variable:global:dryrun) { $isDryRun = $global:dryrun }
+    if (Test-Path variable:global:DryRun) { $isDryRun = $global:DryRun }
+    
+    if ($isDryRun) {
         Write-Host "[DRY-RUN] Would set $Path\$Name = $Value ($Type)" -ForegroundColor DarkYellow
         Write-ModuleLog "[DRY-RUN] Would set $($Path)\$($Name) = $Value ($Type)"
     } else {

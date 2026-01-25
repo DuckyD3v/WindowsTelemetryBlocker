@@ -319,7 +319,7 @@ function Execute-Profile {
     }
     
     if ($DryRun) {
-        $v09Params["DryRun"] = $true
+        $v09Params.DryRun = $true
         Write-Host "DRY-RUN MODE: No changes will be made" -ForegroundColor Yellow
         Write-LogEntry "INFO" "Running in DRY-RUN mode"
     }
@@ -346,9 +346,9 @@ function Execute-Profile {
             Write-LogEntry "INFO" "v0.9 script execution completed successfully"
             return $true
         } else {
-            Write-Host "`n[WARN] v0.9 script returned exit code: $exitCode" -ForegroundColor Yellow
-            Write-LogEntry "WARN" "v0.9 script returned exit code: $exitCode"
-            return $true  # Still consider it successful if script ran
+            Write-Host "`n[ERROR] v0.9 script returned exit code: $exitCode" -ForegroundColor Red
+            Write-LogEntry "ERROR" "v0.9 script returned exit code: $exitCode"
+            return $false  # Return false on error
         }
         
     } catch {
@@ -402,9 +402,20 @@ function Main {
         Write-Host "`nExecution started at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
         Write-Host "Profile: $Profile" -ForegroundColor Cyan
         Write-Host "Log: $logPath" -ForegroundColor Gray
+        Write-Host ""
         
-        Write-Host "`n[OK] Profile execution completed!" -ForegroundColor Green
-        Write-LogEntry "INFO" "Profile execution completed successfully"
+        # Actually execute the profile by calling the v0.9 script
+        $executionResult = Execute-Profile -ProfileName $Profile
+        
+        if ($executionResult) {
+            Write-Host "`n[OK] Profile execution completed!" -ForegroundColor Green
+            Write-LogEntry "INFO" "Profile execution completed successfully"
+        } else {
+            Write-Host "`n[ERROR] Profile execution failed!" -ForegroundColor Red
+            Write-LogEntry "ERROR" "Profile execution failed"
+            Read-Host "Press Enter to exit"
+            exit 1
+        }
         
         if (-not $Quiet) {
             Read-Host "`nPress Enter to exit"

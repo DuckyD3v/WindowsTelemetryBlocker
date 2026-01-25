@@ -173,7 +173,7 @@ Use `-DryRun` to preview changes without applying them.
 ### Update Issues
 If update fails, download manually from GitHub.
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
@@ -181,6 +181,16 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - Make changes
 - Test thoroughly
 - Submit a pull request
+
+### Developer Resources
+
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[MODULE_TEMPLATE.md](MODULE_TEMPLATE.md)** - Template for creating new modules
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development workflow guide
+- **[SCALABILITY.md](SCALABILITY.md)** - Architecture and scalability guide
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Project structure documentation
+- **[VERSIONING.md](VERSIONING.md)** - Version management guide
+- **[QUICK_START.md](QUICK_START.md)** - Quick reference guide
 
 ## License
 

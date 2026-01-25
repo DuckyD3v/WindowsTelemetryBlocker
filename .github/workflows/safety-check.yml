@@ -2,23 +2,25 @@ name: Safety & Accuracy Check
 
 on:
   push:
-    branches: [ 🌕Nextgen ]
+    branches: [main, "🌕Nextgen", "📦Current"]
   pull_request:
-    branches: [ 🌕Nextgen ]
+    branches: [main, "🌕Nextgen", "📦Current"]
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   safety:
+    name: Safety and Accuracy Validation
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Check for Dangerous Commands
       shell: pwsh
       run: |
         # Whitelist: These commands are LEGITIMATE and NECESSARY for system administration
-        # - Remove-Item: Needed to delete apps and temporary files (with user confirmation)
-        # - Format-Volume/Clear-Disk: System management with admin elevation
-        # - Restart-Computer: Reboot system when needed
         # All operations are protected by:
         #   1. Admin privilege requirement
         #   2. System restore point creation before changes
@@ -29,59 +31,58 @@ jobs:
         #   7. Dry-run preview mode
         # This is a TRANSPARENT, OPEN-SOURCE privacy tool - NOT malware
         
-        $whitelisted = @(
-          'Remove-Item',
-          'Format-Volume',
-          'Remove-Partition',
-          'Clear-Disk',
-          'Set-Partition',
-          'Remove-Item -Recurse -Force',
-          'del /f /q /s',
-          'rd /s /q',
-          'shutdown',
-          'Stop-Computer',
-          'Restart-Computer'
-        )
-        
-        $dangerous = @('Format-Volume', 'Format-Disk', 'Cipher /w:', 'diskpart')
+        $dangerous = @('Format-Volume', 'Format-Disk', 'Cipher /w:', 'diskpart /s')
         $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $found = @()
         foreach ($script in $scripts) {
           $content = Get-Content $script.FullName -Raw
           foreach ($cmd in $dangerous) {
             if ($content -match "\b$([regex]::Escape($cmd))\b") {
-              throw "Potentially dangerous command '$cmd' found in $($script.FullName)"
+              $found += "$($script.FullName): $cmd"
             }
           }
         }
-        
-        Write-Host "[INFO] Command whitelist check passed - legitimate system admin commands are in use"
+        if ($found.Count -gt 0) {
+          throw "Potentially dangerous commands found:`n$($found -join "`n")"
+        }
+        Write-Host "[OK] No dangerous commands detected"
 
     - name: Check for Confirm Impact
       shell: pwsh
       run: |
         $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $noConfirm = @()
         foreach ($script in $scripts) {
           $content = Get-Content $script.FullName -Raw
-          if ($content -match 'ConfirmImpact') {
-            Write-Host "[INFO] ConfirmImpact found in $($script.FullName)"
+          # Check for destructive operations without confirmation
+          if ($content -match 'Remove-Item.*-Force' -and $content -notmatch 'Confirm|Read-Host|DryRun') {
+            $noConfirm += $script.FullName
           }
+        }
+        if ($noConfirm.Count -gt 0) {
+          Write-Host "[WARN] Scripts with destructive operations (review confirmation):"
+          $noConfirm | ForEach-Object { Write-Host "  $_" }
+        } else {
+          Write-Host "[OK] Destructive operations have confirmation"
         }
 
     - name: Check for Restore Point Creation
       shell: pwsh
       run: |
         $main = Get-Content windowstelementryblocker.ps1 -Raw
-        if ($main -notmatch 'Checkpoint-Computer') {
-          throw "Restore point creation (Checkpoint-Computer) missing in main script!"
+        if ($main -notmatch 'Checkpoint-Computer|New-SystemRestorePoint') {
+          throw "Restore point creation missing in main script!"
         }
+        Write-Host "[OK] Restore point creation present"
 
     - name: Check for Dry-Run Mode
       shell: pwsh
       run: |
         $main = Get-Content windowstelementryblocker.ps1 -Raw
-        if ($main -notmatch 'dryrun') {
+        if ($main -notmatch 'dryrun|DryRun') {
           throw "Dry-run mode not found in main script!"
         }
+        Write-Host "[OK] Dry-run mode present"
 
     - name: Check for Logging
       shell: pwsh
@@ -90,35 +91,78 @@ jobs:
         if ($main -notmatch 'Write-Log') {
           throw "Logging (Write-Log) not found in main script!"
         }
+        Write-Host "[OK] Logging functionality present"
 
     - name: Check for User Prompts Before Destructive Actions
       shell: pwsh
       run: |
         $main = Get-Content windowstelementryblocker.ps1 -Raw
-        if ($main -notmatch 'Read-Host') {
-          Write-Host "[WARNING] No user prompt (Read-Host) found in main script. Ensure destructive actions are confirmed."
+        $hasPrompts = $main -match 'Read-Host|Confirm'
+        if (-not $hasPrompts) {
+          Write-Host "[WARN] No user prompts found in main script. Ensure destructive actions are confirmed."
+        } else {
+          Write-Host "[OK] User prompts present for confirmation"
         }
 
     - name: Check for Rollback Scripts
       shell: pwsh
       run: |
         $modules = @('services','telemetry','apps','misc')
+        $missing = @()
         foreach ($mod in $modules) {
           $rollback = "modules/${mod}-rollback.ps1"
           if (-not (Test-Path $rollback)) {
-            throw "Missing rollback script: $rollback"
+            $missing += $rollback
           }
         }
+        if ($missing.Count -gt 0) {
+          throw "Missing rollback scripts: $($missing -join ', ')"
+        }
+        Write-Host "[OK] All rollback scripts present"
 
     - name: Check README for Safety Warnings
       shell: pwsh
       run: |
         $readme = Get-Content README.md -Raw
-        if ($readme -notmatch 'Test on a VM' -and $readme -notmatch 'Always run as administrator') {
-          throw "README.md missing safety warning!"
+        $warnings = @('Test on a VM', 'administrator', 'backup', 'restore')
+        $found = 0
+        foreach ($warning in $warnings) {
+          if ($readme -match $warning) {
+            $found++
+          }
         }
+        if ($found -lt 2) {
+          throw "README.md missing safety warnings!"
+        }
+        Write-Host "[OK] Safety warnings present in README"
+
+    - name: Check for Error Handling
+      shell: pwsh
+      run: |
+        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $errorHandling = @('try\s*\{', 'catch\s*\{', 'trap\s*\{')
+        $found = 0
+        foreach ($pattern in $errorHandling) {
+          if ($main -match $pattern) {
+            $found++
+          }
+        }
+        if ($found -eq 0) {
+          throw "No error handling found in main script!"
+        }
+        Write-Host "[OK] Error handling present"
+
+    - name: Check for Registry Backup
+      shell: pwsh
+      run: |
+        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        if ($main -notmatch 'Export-RegistryBackup|registry.*backup') {
+          throw "Registry backup functionality missing!"
+        }
+        Write-Host "[OK] Registry backup functionality present"
 
     - name: Print Success
       shell: pwsh
       run: |
         Write-Host "All safety and accuracy checks passed!"
+

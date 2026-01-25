@@ -1,0 +1,39 @@
+name: CodeQL Analysis
+
+on:
+  push:
+    branches: [main, "📦Current"]
+  pull_request:
+    branches: [main, "📦Current"]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript', 'python']
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+    
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+    
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
