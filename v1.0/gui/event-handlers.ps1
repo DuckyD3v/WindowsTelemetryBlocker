@@ -1,4 +1,4 @@
-# ===============================
+﻿# ===============================
 # Event Handlers Module
 # Phase 2.3 - Events & Execution
 # ===============================
@@ -124,7 +124,7 @@ function New-DryRunToggleHandler {
         $FormState.DryRunMode = $DryRunCheckBox.Checked
         
         if ($DryRunCheckBox.Checked) {
-            Write-Host "⚠️  DRY RUN MODE ENABLED - No changes will be made" -ForegroundColor Yellow
+            Write-Host "âš ï¸  DRY RUN MODE ENABLED - No changes will be made" -ForegroundColor Yellow
         }
         else {
             Write-Host "Dry run mode disabled" -ForegroundColor Gray
@@ -148,7 +148,7 @@ function Invoke-ExecutionPipeline {
     Write-Host "=== EXECUTION PIPELINE STARTED ===" -ForegroundColor Cyan
     
     if ($FormState.IsExecuting) {
-        Write-Host "⚠️  Execution already in progress" -ForegroundColor Yellow
+        Write-Host "âš ï¸  Execution already in progress" -ForegroundColor Yellow
         return $false
     }
     
@@ -268,7 +268,7 @@ function Invoke-ExecutionPipeline {
         # Phase 7: Completion
         Update-ExecutionLog -LogBox $LogBox -Level "OK" -Message "Execution completed successfully"
         $ProgressBar.Value = 100
-        $StatusLabel.Text = "✅ Completed"
+        $StatusLabel.Text = "âœ… Completed"
         
         if ($FormState.DryRunMode) {
             Update-ExecutionLog -LogBox $LogBox -Level "INFO" -Message "This was a DRY RUN - no actual changes were made"
@@ -279,7 +279,7 @@ function Invoke-ExecutionPipeline {
     }
     catch {
         Update-ExecutionLog -LogBox $LogBox -Level "ERROR" -Message "Execution failed: $_"
-        $StatusLabel.Text = "❌ Failed"
+        $StatusLabel.Text = "âŒ Failed"
         Write-Host "=== EXECUTION PIPELINE FAILED ===" -ForegroundColor Red
         return $false
     }
@@ -401,3 +401,4 @@ Export-ModuleMember -Function @(
     'New-ErrorHandler',
     'New-ExecuteButtonHandler'
 )
+

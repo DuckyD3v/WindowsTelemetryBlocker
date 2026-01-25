@@ -1,4 +1,4 @@
-# Phase 4: Scheduler UI Module
+﻿# Phase 4: Scheduler UI Module
 # Provides Windows Forms dialog for task scheduler management
 # Handles task creation, viewing, and control operations
 
@@ -244,7 +244,7 @@ Enable Quiet Mode to hide the UI during automated execution.
             $tasks = Get-ScheduledTelemetryTasks
             
             foreach ($task in $tasks) {
-                $enabledIndicator = if ($task.Enabled) { "✓" } else { "✗" }
+                $enabledIndicator = if ($task.Enabled) { "âœ“" } else { "âœ—" }
                 $displayText = "[$enabledIndicator] $($task.TaskName) [$($task.State)]"
                 [void]$tasksListBox.Items.Add($displayText)
             }
@@ -381,6 +381,6 @@ Missed Runs: $($details.NumberOfMissedRuns)
 # EXPORTS
 # ============================================================================
 
-Export-ModuleMember -Function @(
-    'Show-SchedulerDialog'
-)
+
+
+

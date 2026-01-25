@@ -1,4 +1,4 @@
-# ===============================
+﻿# ===============================
 # GUI Theme Manager
 # v1.0 - Theme System for Windows Forms
 # ===============================
@@ -432,17 +432,6 @@ function Darken-Color {
 # Export Functions
 # ===============================
 
-Export-ModuleMember -Function @(
-    'Get-DarkTheme',
-    'Get-LightTheme',
-    'Get-HighContrastTheme',
-    'Get-ApplicationTheme',
-    'Get-AvailableThemes',
-    'Apply-Theme',
-    'Apply-ThemeToControl',
-    'Save-UserTheme',
-    'Get-UserTheme',
-    'New-Color',
-    'Lighten-Color',
-    'Darken-Color'
-)
+
+
+

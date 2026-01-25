@@ -1,4 +1,4 @@
-# ===============================
+﻿# ===============================
 # GUI Form Controls Library
 # v1.0 - Reusable Control Components
 # ===============================
@@ -589,20 +589,6 @@ function Get-SelectedApps {
 # Export Functions
 # ===============================
 
-Export-ModuleMember -Function @(
-    'New-StyledButton',
-    'New-StyledLabel',
-    'New-StyledPanel',
-    'New-StyledCheckBox',
-    'New-StyledComboBox',
-    'New-StyledTextBox',
-    'New-StyledListBox',
-    'New-StyledProgressBar',
-    'New-StyledGroupBox',
-    'New-ModuleCheckBox',
-    'New-StatusIndicator',
-    'New-LogViewer',
-    'New-AppSelector',
-    'Set-ControlTheme',
-    'Get-SelectedApps'
-)
+
+
+

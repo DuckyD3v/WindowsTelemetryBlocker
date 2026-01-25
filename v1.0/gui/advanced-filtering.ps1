@@ -1,4 +1,4 @@
-# ===============================
+﻿# ===============================
 # Advanced Filtering Module
 # Phase 3 - Selective App/Service Management
 # ===============================
@@ -701,14 +701,6 @@ function Import-Profile {
 # ===============================
 
 # Export public functions
-Export-ModuleMember -Function @(
-    'Show-AdvancedFilterDialog',
-    'Show-CustomProfileDialog',
-    'Get-FilteredApps',
-    'Get-FilteredServices',
-    'Get-AppCategories',
-    'Get-ServiceCategories',
-    'New-CustomProfile',
-    'Export-Profile',
-    'Import-Profile'
-)
+
+
+

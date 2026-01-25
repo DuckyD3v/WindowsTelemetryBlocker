@@ -1,4 +1,4 @@
-# Phase 2.5: UI Refinement and Validation
+﻿# Phase 2.5: UI Refinement and Validation
 # Comprehensive UI testing, DPI handling, and accessibility improvements
 # Cross-resolution testing and performance optimization
 
@@ -403,46 +403,46 @@ function Generate-UIValidationReport {
     
     try {
         $report = @"
-╔════════════════════════════════════════════════════════════════╗
-║         PHASE 2.5 - UI REFINEMENT VALIDATION REPORT            ║
-╚════════════════════════════════════════════════════════════════╝
+â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+â•‘         PHASE 2.5 - UI REFINEMENT VALIDATION REPORT            â•‘
+â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 
 1. DPI SCALING ANALYSIS
-─────────────────────────────────────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 System DPI Factor: $(Get-SystemDPI)
-Status: ✓ VALIDATED
+Status: âœ“ VALIDATED
 
 2. RESOLUTION TESTING
-─────────────────────────────────────────────────────────────────
-$(Test-UIResolutions | ForEach-Object { "  $($_.Resolution) ($($_.Name)): $(if ($_.UIFitsScreen) {'✓'} else {'✗'})" })
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+$(Test-UIResolutions | ForEach-Object { "  $($_.Resolution) ($($_.Name)): $(if ($_.UIFitsScreen) {'âœ“'} else {'âœ—'})" })
 
 3. ACCESSIBILITY FEATURES
-─────────────────────────────────────────────────────────────────
-$(Test-AccessibilityFeatures | ForEach-Object { $_.PSObject.Properties | ForEach-Object { "  $($_.Name): $(if ($_.Value) {'✓'} else {'✗'})" }})
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+$(Test-AccessibilityFeatures | ForEach-Object { $_.PSObject.Properties | ForEach-Object { "  $($_.Name): $(if ($_.Value) {'âœ“'} else {'âœ—'})" }})
 
 4. THEME CONSISTENCY
-─────────────────────────────────────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 Dark Theme:
-  Contrast Ratio: $(Test-ThemeConsistency -Theme "Dark" | Select-Object -ExpandProperty ContrastRatio) (WCAG AA: ✓)
-  Status: ✓ VALIDATED
+  Contrast Ratio: $(Test-ThemeConsistency -Theme "Dark" | Select-Object -ExpandProperty ContrastRatio) (WCAG AA: âœ“)
+  Status: âœ“ VALIDATED
 
 Light Theme:
-  Contrast Ratio: $(Test-ThemeConsistency -Theme "Light" | Select-Object -ExpandProperty ContrastRatio) (WCAG AA: ✓)
-  Status: ✓ VALIDATED
+  Contrast Ratio: $(Test-ThemeConsistency -Theme "Light" | Select-Object -ExpandProperty ContrastRatio) (WCAG AA: âœ“)
+  Status: âœ“ VALIDATED
 
 5. MEMORY PROFILE
-─────────────────────────────────────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $(Get-MemoryProfile | ForEach-Object { "  Working Set: $($_.ProcessWorkingSetMB) MB`n  Private Memory: $($_.ProcessPrivateMemoryMB) MB" })
 
 6. SUMMARY
-─────────────────────────────────────────────────────────────────
-All validations passed: ✓ YES
-UI ready for production: ✓ YES
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+All validations passed: âœ“ YES
+UI ready for production: âœ“ YES
 Recommended next step: Phase 5 Monitoring System Integration
 
-═════════════════════════════════════════════════════════════════
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 "@
         
         $report | Set-Content -Path $ReportPath
@@ -457,18 +457,8 @@ Recommended next step: Phase 5 Monitoring System Integration
 }
 
 # ============================================================================
-# EXPORTS
+# Note: Export-ModuleMember cannot be used in dot-sourced scripts
 # ============================================================================
 
-Export-ModuleMember -Function @(
-    'Get-SystemDPI',
-    'Adjust-FormForDPI',
-    'Test-UIResolutions',
-    'Test-AccessibilityFeatures',
-    'Test-ControlConfiguration',
-    'Test-EventHandlers',
-    'Get-MemoryProfile',
-    'Test-ThemeConsistency',
-    'Test-ColorContrast',
-    'Generate-UIValidationReport'
-)
+# All functions are automatically available when this script is dot-sourced
+

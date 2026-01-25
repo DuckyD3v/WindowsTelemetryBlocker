@@ -28,7 +28,8 @@ function Initialize-Logging {
     
     if ([string]::IsNullOrEmpty($LogDirectory)) {
         $appDataPath = [Environment]::GetFolderPath("ApplicationData")
-        $LogDirectory = Join-Path $appDataPath "WindowsTelemetryBlocker" "logs"
+        $LogDirectory = Join-Path $appDataPath "WindowsTelemetryBlocker"
+        $LogDirectory = Join-Path $LogDirectory "logs"
     }
     
     if (-not (Test-Path $LogDirectory)) {
@@ -469,22 +470,5 @@ Status: $($Results.Status)
     return $report
 }
 
-# Export public functions
-Export-ModuleMember -Function @(
-    'Initialize-Logging',
-    'Write-LogEntry',
-    'Show-Notification',
-    'Show-MessageBox',
-    'Test-AdminPrivilege',
-    'Require-AdminPrivilege',
-    'Get-SystemInfo',
-    'Get-RegistryValue',
-    'Set-RegistryValue',
-    'Backup-RegistryKey',
-    'Get-ServiceState',
-    'Disable-TelemetryService',
-    'Remove-TelemetryFile',
-    'Show-Progress',
-    'Complete-Progress',
-    'Format-ExecutionReport'
-)
+# Note: Export-ModuleMember cannot be used in dot-sourced scripts
+# All functions are automatically available when this script is dot-sourced

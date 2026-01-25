@@ -1,4 +1,4 @@
-# Phase 4: Task Scheduler Module
+﻿# Phase 4: Task Scheduler Module
 # Provides Windows Task Scheduler integration for automated telemetry blocking
 # Handles task creation, management, scheduling, and execution tracking
 
@@ -514,17 +514,6 @@ function Write-LogMessage {
 # EXPORTS
 # ============================================================================
 
-Export-ModuleMember -Function @(
-    'New-ScheduledTelemetryTask',
-    'Get-ScheduledTelemetryTasks',
-    'Get-TaskDetails',
-    'Remove-ScheduledTelemetryTask',
-    'Start-ScheduledTask',
-    'Stop-ScheduledTaskForce',
-    'Enable-ScheduledTask',
-    'Disable-ScheduledTask',
-    'Validate-ScheduleTime',
-    'Validate-ScheduleType',
-    'Get-TaskExecutionHistory',
-    'Get-ScheduleStatistics'
-)
+
+
+

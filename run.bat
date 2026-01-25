@@ -4,7 +4,7 @@ REM v1.0 with Phase 1 Integration
 
 setlocal enabledelayedexpansion
 set "SCRIPT_DIR=%~dp0"
-set "LAUNCHER_VERSION=1.0"
+set "LAUNCHER_VERSION=1.5"
 set "PHASE=1"
 set "LOG_FILE=%SCRIPT_DIR%telemetry-blocker.log"
 set "PS_SCRIPT=%SCRIPT_DIR%windowstelementryblocker.ps1"
@@ -160,18 +160,23 @@ if "%CHOICE%"=="1" (
         echo.
         goto choice_2
     )
-    echo [INFO] Launching v1.0 (Phase 1)...
+    echo [INFO] Launching v1.0 GUI Launcher...
     echo [SAFETY] Recording execution state...
     echo v1.0 Launcher - Started %date% %time% > "%LAST_EXECUTION_STATE%"
     echo %date% %time% [EXECUTION] v1.0 launcher started >> "%SAFETY_LOG%"
+    echo.
     "%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%V1_LAUNCHER%"
-    if %errorlevel% neq 0 (
-        echo %date% %time% [ERROR] v1.0 launcher ended with error code %errorlevel% >> "%SAFETY_LOG%"
-        echo [WARN] v1.0 launcher ended with error. Check logs for details.
+    set LAUNCH_ERROR=!errorlevel!
+    echo.
+    echo [STATUS] v1.0 Launcher has closed.
+    if !LAUNCH_ERROR! neq 0 (
+        echo %date% %time% [ERROR] v1.0 launcher ended with error code !LAUNCH_ERROR! >> "%SAFETY_LOG%"
+        echo [WARN] Launcher ended with error code: !LAUNCH_ERROR!
     ) else (
         echo %date% %time% [SUCCESS] v1.0 launcher completed successfully >> "%SAFETY_LOG%"
         del "%LAST_EXECUTION_STATE%"
     )
+    echo.
     pause
     goto menu
 )

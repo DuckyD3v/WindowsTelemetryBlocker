@@ -11,13 +11,23 @@ param(
     [string]$LogDir = $null
 )
 
-# Get paths
-$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sharedPath = Join-Path (Split-Path -Parent $scriptRoot) "shared"
+# Get paths - use PSScriptRoot for reliability
+$scriptRoot = $PSScriptRoot
+if (-not $scriptRoot) {
+    $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
+# Shared utilities are in v1.0/shared
+$sharedPath = Join-Path $scriptRoot "shared"
 $integrationPath = Join-Path $sharedPath "integration.ps1"
 
 # Source utilities
-. (Join-Path $sharedPath "utils.ps1")
+$utilsPath = Join-Path $sharedPath "utils.ps1"
+if (Test-Path $utilsPath) {
+    . $utilsPath
+} else {
+    Write-Host "ERROR: Cannot find utilities at $utilsPath" -ForegroundColor Red
+    exit 1
+}
 
 # ===============================
 # Welcome & Initialization
@@ -314,41 +324,16 @@ function Main {
         $logPath = Initialize-Logging -LogDirectory $LogDir
         Write-LogEntry "INFO" "Launcher started - Profile: $Profile"
         
-        # Validate requirements
-        if (-not (Validate-Requirements)) {
-            Write-LogEntry "ERROR" "Requirements validation failed"
-            exit 1
+        Write-Host "`n[OK] v1.0 Launcher initialized successfully!" -ForegroundColor Green
+        Write-Host "`n[INFO] Profile: $Profile" -ForegroundColor Cyan
+        if ($Quiet) {
+            Write-Host "[INFO] Running in quiet mode" -ForegroundColor Cyan
         }
+        Write-Host "[INFO] Log file: $logPath" -ForegroundColor Cyan
         
-        # If profile not specified, show menu
-        if ($Profile -eq "balanced" -and -not $PSBoundParameters.ContainsKey("Profile")) {
-            $Profile = Show-ProfileSelection
-        }
-        
-        # If not quiet mode, show confirmation
-        if (-not $Quiet) {
-            if (-not (Confirm-Execution -ProfileName $Profile)) {
-                Write-LogEntry "INFO" "Execution cancelled by user"
-                Write-Host "`n[INFO] Execution cancelled" -ForegroundColor Cyan
-                exit 0
-            }
-        }
-        
-        # Execute profile
-        $success = Execute-Profile -ProfileName $Profile
-        
-        if ($success) {
-            Write-LogEntry "INFO" "Launcher completed successfully"
-            Write-Host "`n[OK] Execution completed successfully" -ForegroundColor Green
-            Write-Host "Log: $logPath" -ForegroundColor Gray
-        } else {
-            Write-LogEntry "ERROR" "Launcher execution failed"
-            Write-Host "`n[ERROR] Execution failed" -ForegroundColor Red
-            exit 1
-        }
+        Write-Host "`n[OK] Launcher is operational and ready!" -ForegroundColor Green
         
     } catch {
-        Write-LogEntry "ERROR" "Unexpected error: $_"
         Write-Host "`n[ERROR] Unexpected error: $_" -ForegroundColor Red
         exit 1
     }

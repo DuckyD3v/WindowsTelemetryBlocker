@@ -524,13 +524,6 @@ OVERALL PROJECT STATUS: ✓ COMPLETE
 }
 
 # ============================================================================
-# EXPORTS
+# Note: Export-ModuleMember cannot be used in dot-sourced scripts
 # ============================================================================
-
-Export-ModuleMember -Function @(
-    'Initialize-Phase5Monitoring',
-    'Start-ContinuousMonitoring',
-    'Test-EndToEndWorkflow',
-    'Verify-Phase25Integration',
-    'Generate-Phase25CompletionReport'
-)
+# All functions are automatically available when this script is dot-sourced

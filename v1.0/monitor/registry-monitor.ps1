@@ -1,4 +1,4 @@
-# Phase 5: Registry Monitoring Module
+﻿# Phase 5: Registry Monitoring Module
 # Real-time registry change detection and tracking
 # Monitors telemetry-related registry keys for unauthorized changes
 
@@ -470,13 +470,6 @@ function Write-LogMessage {
 # EXPORTS
 # ============================================================================
 
-Export-ModuleMember -Function @(
-    'New-RegistryBaseline',
-    'Get-RegistryBaseline',
-    'Find-RegistryChanges',
-    'Save-RegistryChangeHistory',
-    'Get-RegistryChangeHistory',
-    'Restore-RegistryFromBaseline',
-    'Get-RegistryMonitoringStatistics',
-    'Test-SuspiciousChange'
-)
+
+
+

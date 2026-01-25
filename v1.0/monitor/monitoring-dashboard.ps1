@@ -1,4 +1,4 @@
-# Phase 5: Monitoring Dashboard and Alerting System
+﻿# Phase 5: Monitoring Dashboard and Alerting System
 # Real-time monitoring UI and alerting mechanisms
 # Provides visual monitoring dashboard and alert management
 
@@ -283,10 +283,10 @@ function Show-MonitoringDashboard {
         $activeAlerts = Get-ActiveAlerts
         foreach ($alert in $activeAlerts) {
             $severityIcon = switch ($alert.Severity) {
-                'Critical' { '⛔' }
-                'High' { '⚠️' }
-                'Medium' { '⚡' }
-                'Low' { 'ℹ️' }
+                'Critical' { 'â›”' }
+                'High' { 'âš ï¸' }
+                'Medium' { 'âš¡' }
+                'Low' { 'â„¹ï¸' }
                 default { '?' }
             }
             
@@ -345,10 +345,10 @@ Dashboard Status: Running
             $activeAlerts = Get-ActiveAlerts
             foreach ($alert in $activeAlerts) {
                 $severityIcon = switch ($alert.Severity) {
-                    'Critical' { '⛔' }
-                    'High' { '⚠️' }
-                    'Medium' { '⚡' }
-                    'Low' { 'ℹ️' }
+                    'Critical' { 'â›”' }
+                    'High' { 'âš ï¸' }
+                    'Medium' { 'âš¡' }
+                    'Low' { 'â„¹ï¸' }
                     default { '?' }
                 }
                 $displayText = "[$($alert.Severity)] $severityIcon $($alert.Title)"
@@ -450,10 +450,6 @@ function Show-AlertNotification {
 # EXPORTS
 # ============================================================================
 
-Export-ModuleMember -Function @(
-    'New-MonitoringAlert',
-    'Get-ActiveAlerts',
-    'Acknowledge-MonitoringAlert',
-    'Show-MonitoringDashboard',
-    'Show-AlertNotification'
-)
+
+
+

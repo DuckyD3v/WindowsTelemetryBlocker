@@ -1,4 +1,4 @@
-# Phase 2.5: Bug Fixes and Edge Case Handling
+﻿# Phase 2.5: Bug Fixes and Edge Case Handling
 # Comprehensive error handling, input validation, and edge case management
 
 # ============================================================================
@@ -501,13 +501,6 @@ function Invoke-UICleanup {
 # EXPORTS
 # ============================================================================
 
-Export-ModuleMember -Function @(
-    'Validate-UserInput',
-    'Handle-Exception',
-    'Fix-NullReferenceInProfile',
-    'Handle-ConcurrentFileAccess',
-    'Fix-DataBindingIssue',
-    'Invoke-RecoveryAction',
-    'Repair-ConfigurationIntegrity',
-    'Invoke-UICleanup'
-)
+
+
+

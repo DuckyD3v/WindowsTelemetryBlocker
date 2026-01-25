@@ -1,4 +1,4 @@
-# Phase 5: Service Monitoring Module
+﻿# Phase 5: Service Monitoring Module
 # Real-time service state tracking and anomaly detection
 # Monitors telemetry and system service states for unauthorized changes
 
@@ -473,14 +473,6 @@ function Write-LogMessage {
 # EXPORTS
 # ============================================================================
 
-Export-ModuleMember -Function @(
-    'New-ServiceBaseline',
-    'Get-ServiceBaseline',
-    'Find-ServiceChanges',
-    'Save-ServiceChangeHistory',
-    'Get-ServiceChangeHistory',
-    'Restore-ServiceState',
-    'Get-ServiceMonitoringStatistics',
-    'Test-AnomalousServiceChange',
-    'Get-ServiceChangeSeverity'
-)
+
+
+

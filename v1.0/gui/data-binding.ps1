@@ -1,4 +1,4 @@
-# Phase 2.2: Data Binding Module
+﻿# Phase 2.2: Data Binding Module
 # Provides dynamic data loading and binding between configuration and GUI
 # Handles profile/app/service loading, user preferences, and event handler generation
 
@@ -144,7 +144,7 @@ function Load-ServicesIntoListBox {
             
             foreach ($group in $groupedServices) {
                 foreach ($service in $group.Group) {
-                    $criticalIndicator = if ($service.IsCritical) { "[⚠️ CRITICAL]" } else { "" }
+                    $criticalIndicator = if ($service.IsCritical) { "[âš ï¸ CRITICAL]" } else { "" }
                     $displayText = "{0} [{1}] {2}" -f $criticalIndicator, $group.Name, $service.ServiceName
                     [void]$ServicesListBox.Items.Add($displayText)
                 }
@@ -547,18 +547,6 @@ function Get-SelectionStatistics {
 # EXPORTS
 # ============================================================================
 
-Export-ModuleMember -Function @(
-    'Load-ProfilesIntoComboBox',
-    'Load-AppsIntoListBox',
-    'Load-ServicesIntoListBox',
-    'Update-ProfileDescription',
-    'Update-FormStateFromProfile',
-    'Get-UserPreferences',
-    'Save-UserPreferences',
-    'Update-UserPreferences',
-    'Validate-ProfileSelection',
-    'New-SelectionChangeHandler',
-    'New-ProfileChangeHandler',
-    'Refresh-AllContent',
-    'Get-SelectionStatistics'
-) -Variable @('FilterGroup', 'AppMetadata', 'ServiceMetadata')
+ -Variable @('FilterGroup', 'AppMetadata', 'ServiceMetadata')
+
+

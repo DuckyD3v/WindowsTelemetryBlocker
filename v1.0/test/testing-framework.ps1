@@ -1,4 +1,4 @@
-# Phase 2.5: Testing Framework and Validation Suite
+﻿# Phase 2.5: Testing Framework and Validation Suite
 # Comprehensive testing for GUI, data binding, task scheduling, and monitoring
 # Includes unit tests, integration tests, and performance benchmarks
 
@@ -55,12 +55,12 @@ function Initialize-TestEnvironment {
         New-Item -ItemType Directory -Path $testConfig.LogPath -Force | Out-Null
         New-Item -ItemType Directory -Path $testConfig.ResultsPath -Force | Out-Null
         
-        Write-Host "✓ Test environment ready at: $testPath" -ForegroundColor Green
+        Write-Host "âœ“ Test environment ready at: $testPath" -ForegroundColor Green
         
         return $testConfig
     }
     catch {
-        Write-Host "✗ Error initializing test environment: $_" -ForegroundColor Red
+        Write-Host "âœ— Error initializing test environment: $_" -ForegroundColor Red
         return $null
     }
 }
@@ -444,7 +444,7 @@ function Invoke-AllTests {
     
     Write-Host ""
     Write-Host "Running Test Suite..." -ForegroundColor Cyan
-    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+    Write-Host "â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•" -ForegroundColor Cyan
     
     # Unit Tests - Data Binding
     Write-Host ""
@@ -473,13 +473,13 @@ function Invoke-AllTests {
     # Display results
     Write-Host ""
     Write-Host "Test Results:" -ForegroundColor Cyan
-    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+    Write-Host "â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•" -ForegroundColor Cyan
     
     $passed = 0
     $failed = 0
     
     foreach ($result in $results) {
-        $status = if ($result.Passed) { "✓ PASS" } else { "✗ FAIL" }
+        $status = if ($result.Passed) { "âœ“ PASS" } else { "âœ— FAIL" }
         $color = if ($result.Passed) { "Green" } else { "Red" }
         
         Write-Host "$status | $($result.TestName) | $($result.ExecutionTime)" -ForegroundColor $color
@@ -495,14 +495,14 @@ function Invoke-AllTests {
     
     # Summary
     Write-Host ""
-    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+    Write-Host "â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•" -ForegroundColor Cyan
     Write-Host "Total: $($results.Count) | Passed: $passed | Failed: $failed" -ForegroundColor White
     
     if ($failed -eq 0) {
-        Write-Host "✓ All tests passed!" -ForegroundColor Green
+        Write-Host "âœ“ All tests passed!" -ForegroundColor Green
     }
     else {
-        Write-Host "✗ $failed test(s) failed" -ForegroundColor Red
+        Write-Host "âœ— $failed test(s) failed" -ForegroundColor Red
     }
     
     # Save results
@@ -517,18 +517,8 @@ function Invoke-AllTests {
 }
 
 # ============================================================================
-# EXPORTS
+# Note: Export-ModuleMember cannot be used in dot-sourced scripts
 # ============================================================================
 
-Export-ModuleMember -Function @(
-    'Initialize-TestEnvironment',
-    'Test-ProfileLoading',
-    'Test-PreferencesPersistence',
-    'Test-EventHandlerCreation',
-    'Test-TaskCreationValidation',
-    'Test-DataBindingIntegration',
-    'Test-SchedulerWorkflow',
-    'Test-PreferencesLoadingPerformance',
-    'Test-StatisticsCalculationPerformance',
-    'Invoke-AllTests'
-)
+# All functions are automatically available when this script is dot-sourced
+
