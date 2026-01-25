@@ -84,12 +84,15 @@ jobs:
       shell: pwsh
       run: |
         $readme = Get-Content README.md -Raw
-        $features = @('dry-run','rollback','dependency','logging','restore point')
+        $features = @('dry-run','rollback','dependencies','logging','restore point')
         foreach ($feature in $features) {
-          if ($readme -notmatch $feature) {
-            throw \"README.md missing feature: $feature\"
+          if ($readme -match $feature) {
+            Write-Host "[OK] Feature documented: $feature"
+          } else {
+            throw "README.md missing feature: $feature"
           }
         }
+        Write-Host "All required features documented in README!"
 
     - name: Check Script Version Banner
       shell: pwsh
