@@ -15,13 +15,7 @@ A comprehensive, open-source toolkit to disable Windows telemetry and enhance pr
 - **Block Feedback & Advertising** - Prevents feedback prompts and advertising ID usage
 - **Stop Unnecessary Services** - Disables telemetry-related services like DiagTrack, Xbox services, etc.
 - **Remove Bloatware** - Optionally removes pre-installed apps and disables background apps
-- **Interactive Module Selection** - Choose which modules to run via CLI or GUI-like menu
-- **Modern GUI** - Windows Forms-based interface with tabbed navigation
-- **Data Binding** - Real-time synchronization between UI and configuration
-- **Task Scheduling** - Schedule automated telemetry blocking with 6 schedule types
-- **Advanced Filtering** - Regex-based filtering system with custom rules
-- **Real-time Monitoring** - Registry and service change detection with alerts
-- **Dashboard** - Monitoring dashboard with statistics and notifications
+- **Interactive Module Selection** - Choose which modules to run via CLI
 - **Easy Rollback** - Revert changes with dedicated rollback scripts
 - **Advanced Logging** - Comprehensive logs, error tracking, and statistics
 - **Modular Design** - 4 core modules with clear dependencies
