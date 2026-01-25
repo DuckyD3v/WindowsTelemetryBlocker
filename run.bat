@@ -2,7 +2,7 @@
 REM ============================================================================
 REM Windows Telemetry Blocker Launcher
 REM ============================================================================
-REM Version: 1.5
+REM Version: 1.5h1
 REM Description: Batch launcher for Windows Telemetry Blocker with menu system
 REM ============================================================================
 
@@ -12,7 +12,7 @@ REM ============================================================================
 REM Configuration and Path Setup
 REM ============================================================================
 set "SCRIPT_DIR=%~dp0"
-set "LAUNCHER_VERSION=1.5"
+set "LAUNCHER_VERSION=1.5h1"
 set "LOG_FILE=%SCRIPT_DIR%telemetry-blocker.log"
 set "PS_SCRIPT=%SCRIPT_DIR%windowstelemetryblocker.ps1"
 set "SAFETY_LOG=%SCRIPT_DIR%telemetry-blocker-safety.log"

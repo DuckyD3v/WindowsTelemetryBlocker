@@ -286,7 +286,7 @@ function Handle-ConcurrentFileAccess {
             $retryCount++
             if ($retryCount -lt $MaxRetries) {
                 Start-Sleep -Milliseconds $retryDelay
-                $retryDelay *= 1.5  # Exponential backoff
+                $retryDelay *= 1.5h1  # Exponential backoff
             }
         }
     }
