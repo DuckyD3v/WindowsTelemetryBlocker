@@ -27,6 +27,12 @@ $script:SharedPath = Join-Path (Split-Path -Parent $script:ScriptRoot) "shared"
 . (Join-Path $script:ScriptRoot "form-controls.ps1")
 . (Join-Path $script:ScriptRoot "advanced-filtering.ps1")
 . (Join-Path $script:ScriptRoot "event-handlers.ps1")
+. (Join-Path $script:ScriptRoot "data-binding.ps1")
+
+# Import scheduler modules
+$schedulerPath = Join-Path (Split-Path -Parent $script:ScriptRoot) "scheduler"
+. (Join-Path $schedulerPath "task-scheduler.ps1")
+. (Join-Path $schedulerPath "scheduler-ui.ps1")
 
 # Initialize logging
 Initialize-Logging
@@ -571,62 +577,62 @@ function Show-AdvancedOptionsDialog {
     
     $dialog = New-Object System.Windows.Forms.Form
     $dialog.Text = "Advanced Options"
-    $dialog.Width = 500
-    $dialog.Height = 450
+    $dialog.Width = 550
+    $dialog.Height = 550
     $dialog.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
     $dialog.Owner = $Owner
     $dialog.BackColor = $script:FormState.Theme.BackgroundColor
     $dialog.ForeColor = $script:FormState.Theme.ForegroundColor
     
-    # Theme selector
+    # Theme selector (Phase 2.4)
     $themeLbl = New-StyledLabel -Text "Theme:" -Theme $script:FormState.Theme
     $themeLbl.Location = New-Object System.Drawing.Point(20, 20)
     $dialog.Controls.Add($themeLbl)
     
     $themeCombo = New-StyledComboBox -Theme $script:FormState.Theme
-    $themeCombo.Location = New-Object System.Drawing.Point(100, 20)
+    $themeCombo.Location = New-Object System.Drawing.Point(150, 20)
     $themeCombo.Width = 200
     $themeCombo.Items.AddRange(@("dark", "light", "high-contrast"))
-    $themeCombo.SelectedItem = "dark"
+    $themeCombo.SelectedItem = (Get-UserTheme)
     $themeCombo.Add_SelectedIndexChanged({
         $newTheme = Get-ApplicationTheme -ThemeName $themeCombo.SelectedItem
         Save-UserTheme -ThemeName $themeCombo.SelectedItem
         Write-LogEntry "INFO" "Theme changed to: $($themeCombo.SelectedItem)"
+        Update-UserPreferences -Key "theme" -Value $themeCombo.SelectedItem
     })
     $dialog.Controls.Add($themeCombo)
     
     # Advanced Filtering (Phase 3)
     $filterBtn = New-StyledButton -Text "Advanced Filter (Phase 3)" -Theme $script:FormState.Theme
     $filterBtn.Location = New-Object System.Drawing.Point(20, 70)
-    $filterBtn.Width = 250
+    $filterBtn.Width = 300
     $filterBtn.Add_Click({
         Show-AdvancedFilterDialog -Owner $dialog -Theme $script:FormState.Theme
     })
     $dialog.Controls.Add($filterBtn)
     
-    # Create custom profile button
-    $customProfileBtn = New-StyledButton -Text "Create Custom Profile" -Theme $script:FormState.Theme
+    # Custom profile creation (Phase 2.4)
+    $customProfileBtn = New-StyledButton -Text "Create Custom Profile (Phase 2.4)" -Theme $script:FormState.Theme
     $customProfileBtn.Location = New-Object System.Drawing.Point(20, 120)
-    $customProfileBtn.Width = 250
+    $customProfileBtn.Width = 300
     $customProfileBtn.Add_Click({
         Show-CustomProfileDialog -Owner $dialog -Theme $script:FormState.Theme
     })
     $dialog.Controls.Add($customProfileBtn)
     
-    # Export config button
-    $exportBtn = New-StyledButton -Text "Export Configuration" -Theme $script:FormState.Theme
-    $exportBtn.Location = New-Object System.Drawing.Point(20, 170)
-    $exportBtn.Width = 250
-    $exportBtn.Add_Click({
-        & (Join-Path $script:ConfigPath "config-manager.ps1") -Action export
-        Write-LogEntry "INFO" "Configuration exported"
+    # Task Scheduler (Phase 4)
+    $schedulerBtn = New-StyledButton -Text "Task Scheduler (Phase 4)" -Theme $script:FormState.Theme
+    $schedulerBtn.Location = New-Object System.Drawing.Point(20, 170)
+    $schedulerBtn.Width = 300
+    $schedulerBtn.Add_Click({
+        Show-SchedulerDialog -Owner $dialog -Theme $script:FormState.Theme
     })
-    $dialog.Controls.Add($exportBtn)
+    $dialog.Controls.Add($schedulerBtn)
     
     # Import profile button
     $importBtn = New-StyledButton -Text "Import Custom Profile" -Theme $script:FormState.Theme
     $importBtn.Location = New-Object System.Drawing.Point(20, 220)
-    $importBtn.Width = 250
+    $importBtn.Width = 300
     $importBtn.Add_Click({
         $openFileDialog = New-Object System.Windows.Forms.OpenFileDialog
         $openFileDialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*"
@@ -639,14 +645,45 @@ function Show-AdvancedOptionsDialog {
     })
     $dialog.Controls.Add($importBtn)
     
+    # Export config button
+    $exportBtn = New-StyledButton -Text "Export Configuration" -Theme $script:FormState.Theme
+    $exportBtn.Location = New-Object System.Drawing.Point(20, 270)
+    $exportBtn.Width = 300
+    $exportBtn.Add_Click({
+        & (Join-Path $script:ConfigPath "config-manager.ps1") -Action export
+        Write-LogEntry "INFO" "Configuration exported"
+        [System.Windows.Forms.MessageBox]::Show("Configuration exported to user directory", "Success")
+    })
+    $dialog.Controls.Add($exportBtn)
+    
     # System Info button
     $systemBtn = New-StyledButton -Text "System Information" -Theme $script:FormState.Theme
-    $systemBtn.Location = New-Object System.Drawing.Point(20, 270)
-    $systemBtn.Width = 250
+    $systemBtn.Location = New-Object System.Drawing.Point(20, 320)
+    $systemBtn.Width = 300
     $systemBtn.Add_Click({
         Show-SystemInfoDialog -Owner $dialog
     })
     $dialog.Controls.Add($systemBtn)
+    
+    # Statistics button (Phase 2.4)
+    $statsBtn = New-StyledButton -Text "Selection Statistics (Phase 2.4)" -Theme $script:FormState.Theme
+    $statsBtn.Location = New-Object System.Drawing.Point(20, 370)
+    $statsBtn.Width = 300
+    $statsBtn.Add_Click({
+        $stats = Get-SelectionStatistics -FormState $script:FormState `
+            -SelectedApps $script:FormState.SelectedApps `
+            -SelectedServices $script:FormState.SelectedServices
+        
+        $statsMsg = @"
+Apps: $($stats.Apps.SelectedApps)/$($stats.Apps.TotalApps) selected
+Services: $($stats.Services.SelectedServices)/$($stats.Services.TotalServices) selected
+Critical Services: $($stats.Services.CriticalSelected) of $($stats.Services.CriticalServices) selected
+Overall Selection: $($stats.SelectionPercentage)%
+"@
+        
+        [System.Windows.Forms.MessageBox]::Show($statsMsg, "Selection Statistics")
+    })
+    $dialog.Controls.Add($statsBtn)
     
     # Close button
     $closeBtn = New-StyledButton -Text "Close" -Theme $script:FormState.Theme
@@ -665,7 +702,7 @@ function Show-AdvancedOptionsDialog {
 # ===============================
 
 function Main {
-    Write-LogEntry "INFO" "=== GUI Launcher Started ==="
+    Write-LogEntry "INFO" "=== GUI Launcher Started (Phase 2.2 Data Binding) ==="
     
     # Check admin privileges
     if (-not (Test-AdminPrivilege)) {
@@ -680,8 +717,11 @@ function Main {
         return
     }
     
+    # Load user preferences (Phase 2.2)
+    $userPrefs = Get-UserPreferences
+    
     # Load theme
-    Initialize-Theme -ThemeName (Get-UserTheme)
+    Initialize-Theme -ThemeName $userPrefs.theme
     
     # Create main form
     $form = New-MainForm
@@ -708,10 +748,35 @@ function Main {
     $logPanel = New-LogViewerPanel -Form $form -TopPosition $topPos
     $logPanel.Panel.Name = "LogPanel"
     
-    # Initial selection from profile
-    Update-SelectionsFromProfile -ProfileName $script:FormState.SelectedProfile
+    # ===== Phase 2.2: Data Binding Integration =====
+    Write-LogEntry "INFO" "Initializing data binding (Phase 2.2)..."
     
-    Write-LogEntry "INFO" "Form layout complete"
+    # Load all content dynamically (Phase 2.2)
+    Refresh-AllContent -ProfileCombo $profilePanel.ComboBox `
+        -AppsListBox $selectionPanel.AppsListBox `
+        -ServicesListBox $selectionPanel.ServicesListBox `
+        -DescriptionLabel $profilePanel.DescriptionLabel `
+        -FormState $script:FormState
+    
+    # Wire profile change handler (Phase 2.2)
+    $profileChangeHandler = New-ProfileChangeHandler -ProfileCombo $profilePanel.ComboBox `
+        -AppsListBox $selectionPanel.AppsListBox `
+        -ServicesListBox $selectionPanel.ServicesListBox `
+        -DescriptionLabel $profilePanel.DescriptionLabel `
+        -FormState $script:FormState
+    
+    $profilePanel.ComboBox.Add_SelectedIndexChanged($profileChangeHandler)
+    
+    # Wire selection change handlers (Phase 2.2)
+    $appsChangeHandler = New-SelectionChangeHandler -ListBox $selectionPanel.AppsListBox `
+        -FormState $script:FormState -SelectionType "Apps"
+    $selectionPanel.AppsListBox.Add_SelectedIndexChanged($appsChangeHandler)
+    
+    $servicesChangeHandler = New-SelectionChangeHandler -ListBox $selectionPanel.ServicesListBox `
+        -FormState $script:FormState -SelectionType "Services"
+    $selectionPanel.ServicesListBox.Add_SelectedIndexChanged($servicesChangeHandler)
+    
+    Write-LogEntry "INFO" "Form layout complete with data binding (Phase 2.2)"
     
     # Show form
     [void]$form.ShowDialog()

@@ -1,6 +1,6 @@
 # ===============================
 # Windows Telemetry Blocker
-$ScriptVersion = '1.0 (v0.9 - Phase 1 compatible)'
+$ScriptVersion = '1.0 (presnapshot)'
 # ===============================
 
 # ==== SAFETY BARRIER SYSTEM ====
