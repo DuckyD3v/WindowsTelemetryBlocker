@@ -2,10 +2,6 @@
 # Windows Telemetry Blocker
 # Main Script
 # ============================================================================
-# Script Version: 1.0
-# Description: Comprehensive toolkit to disable Windows telemetry and enhance
-#              privacy on Windows 10 and 11
-# ============================================================================
 
 #region Parameters
 # Parameters must be at the top of the script (after comments)
