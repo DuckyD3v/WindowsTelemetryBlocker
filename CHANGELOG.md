@@ -87,14 +87,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Network call validation
   - Contributor validation
 
-### Documentation
-- **Developer Resources**: Comprehensive documentation
-  - Module creation templates
-  - Scalability guidelines
-  - Development workflow
-  - Project structure guide
-  - Contribution guidelines
-
 ---
 
 ## [0.9] - 2026-01-24
