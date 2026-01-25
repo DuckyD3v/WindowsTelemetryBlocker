@@ -239,12 +239,12 @@ Enable Quiet Mode to hide the UI during automated execution.
         $manageTab.Controls.Add($detailsBox)
         
         # Refresh function
-        $Refresh-ManagedTasksList = {
+        function Refresh-ManagedTasksList {
             $tasksListBox.Items.Clear()
             $tasks = Get-ScheduledTelemetryTasks
-            
+
             foreach ($task in $tasks) {
-                $enabledIndicator = if ($task.Enabled) { "âœ“" } else { "âœ—" }
+                $enabledIndicator = if ($task.Enabled) { "✓" } else { "✗" }
                 $displayText = "[$enabledIndicator] $($task.TaskName) [$($task.State)]"
                 [void]$tasksListBox.Items.Add($displayText)
             }
@@ -286,7 +286,7 @@ Missed Runs: $($details.NumberOfMissedRuns)
         $refreshBtn.BackColor = $accentColor
         $refreshBtn.ForeColor = "White"
         $refreshBtn.Cursor = "Hand"
-        $refreshBtn.Add_Click({ & $Refresh-ManagedTasksList })
+        $refreshBtn.Add_Click({ Refresh-ManagedTasksList })
         $buttonPanel.Controls.Add($refreshBtn)
         
         # Start Button
