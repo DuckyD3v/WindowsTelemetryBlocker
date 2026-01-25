@@ -121,7 +121,7 @@ jobs:
             $content = Get-Content $script -Raw
             # Check for consistent region usage
             if ($content -match 'region' -and $content -notmatch '#region') {
-              $styleIssues += "$script: Inconsistent region syntax"
+              $styleIssues += "${script}: Inconsistent region syntax"
             }
             # Check for proper indentation (basic check)
             $lines = $content -split "`n"
