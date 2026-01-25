@@ -27,16 +27,15 @@
 
 ### Security
 - [ ] I followed all the contributing guidelines (Read [CONTRIBUTING.md](CONTRIBUTING.md))
-- [] All of my user-specific files have been deleted properly. (Logs, todo, ect)
+- [ ] All of my user-specific files have been deleted properly. (Logs, todo, ect)
 - [ ] No hardcoded secrets
 - [ ] Code follows style guidelines
 - [ ] Error handling implemented
-- [ ] Logging added
+- [ ] Logging added/exists for features
 - [ ] Rollback script created (if needed)
 - [ ] Dependencies documented
 
 ## Testing
-- [ ] All tests pass
 - [ ] Script runs without errors
 - [ ] Dry-run mode works
 - [ ] Actual execution works
