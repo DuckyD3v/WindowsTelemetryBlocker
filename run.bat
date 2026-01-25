@@ -1,15 +1,27 @@
 @echo off
+REM ============================================================================
 REM Windows Telemetry Blocker Launcher
+REM ============================================================================
+REM Version: 1.5
+REM Description: Batch launcher for Windows Telemetry Blocker with menu system
+REM ============================================================================
 
 setlocal enabledelayedexpansion
+
+REM ============================================================================
+REM Configuration and Path Setup
+REM ============================================================================
 set "SCRIPT_DIR=%~dp0"
-set "LAUNCHER_VERSION=1.3"
+set "LAUNCHER_VERSION=1.5"
 set "LOG_FILE=%SCRIPT_DIR%telemetry-blocker.log"
 set "PS_SCRIPT=%SCRIPT_DIR%windowstelementryblocker.ps1"
 set "SAFETY_LOG=%SCRIPT_DIR%telemetry-blocker-safety.log"
 set "LAST_EXECUTION_STATE=%SCRIPT_DIR%.last-execution-state"
+set "V1_LAUNCHER=%SCRIPT_DIR%v1.0\launcher.ps1"
 
-REM Initialize logs
+REM ============================================================================
+REM Logging Initialization
+REM ============================================================================
 if not exist "%LOG_FILE%" echo. > "%LOG_FILE%"
 if not exist "%SAFETY_LOG%" echo. > "%SAFETY_LOG%"
 echo %date% %time% [INFO] Launcher started >> "%LOG_FILE%"
@@ -19,40 +31,20 @@ echo. >> "%SAFETY_LOG%"
 echo %date% %time% ====== LAUNCHER SESSION START ====== >> "%SAFETY_LOG%"
 echo %date% %time% [INFO] Launcher version: %LAUNCHER_VERSION% >> "%SAFETY_LOG%"
 
+REM ============================================================================
+REM Safety Checks
+REM ============================================================================
 REM Check for incomplete execution from previous session
 if exist "%LAST_EXECUTION_STATE%" (
     echo.
     echo [WARN] Previous execution may have been interrupted.
-    echo [INFO] Checking status...
-    echo %date% %time% [WARN] Incomplete execution detected from previous session >> "%SAFETY_LOG%"
-    
-    for /f "delims=" %%A in (%LAST_EXECUTION_STATE%) do (
-        echo %%A
-        echo %date% %time% [STATUS] %%A >> "%SAFETY_LOG%"
-    )
-    
-    echo.
-    echo Do you want to:
-    echo 1. Run full rollback for safety
-    echo 2. Continue normally (not recommended)
-    echo 3. Exit
-    set /p INCOMPLETE_CHOICE="Enter choice [1-3]: "
-    
-    if "!INCOMPLETE_CHOICE!"=="1" (
-        echo [INFO] Running rollback for safety...
-        echo %date% %time% [SAFETY] User elected rollback for incomplete execution >> "%SAFETY_LOG%"
-        del "%LAST_EXECUTION_STATE%"
-        goto menu
-    )
-    if "!INCOMPLETE_CHOICE!"=="3" (
-        echo [INFO] Exiting...
-        exit /b 0
-    )
-    echo Continuing normally.
+    echo [INFO] Cleaning up...
     del "%LAST_EXECUTION_STATE%"
 )
 
-REM Check admin rights
+REM ============================================================================
+REM Administrator Privilege Check
+REM ============================================================================
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo [WARN] This script requires administrator privileges.
@@ -63,7 +55,9 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-REM Display title
+REM ============================================================================
+REM Display Initialization
+REM ============================================================================
 cls
 title Windows Telemetry Blocker
 echo ===================================
@@ -74,7 +68,9 @@ echo [OK] Running with administrator privileges.
 echo %date% %time% [OK] Running with admin privileges >> "%LOG_FILE%"
 echo.
 
-REM Find PowerShell
+REM ============================================================================
+REM PowerShell Detection
+REM ============================================================================
 set "PS_EXE="
 where pwsh.exe >nul 2>&1
 if %errorlevel%==0 (
@@ -115,6 +111,9 @@ echo %date% %time% [INFO] Using PowerShell: %PS_EXE% >> "%LOG_FILE%"
 echo %date% %time% [INFO] Using PowerShell: %PS_EXE% >> "%SAFETY_LOG%"
 echo.
 
+REM ============================================================================
+REM Script Validation
+REM ============================================================================
 REM Check for main script
 if not exist "%PS_SCRIPT%" (
     echo [ERROR] Main PowerShell script not found: %PS_SCRIPT%
@@ -124,7 +123,7 @@ if not exist "%PS_SCRIPT%" (
 )
 
 REM Get script version
-"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content '%PS_SCRIPT%' | Select-String '# Script Version:' | Select-Object -First 1).Line" >temp_version.txt 2>nul
+"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content '%PS_SCRIPT%' | Select-String 'Script Version:' | Select-Object -First 1).Line" >temp_version.txt 2>nul
 if exist temp_version.txt (
     for /f "delims=" %%V in (temp_version.txt) do set "SCRIPT_VERSION=%%V"
     del temp_version.txt
@@ -135,25 +134,82 @@ if defined SCRIPT_VERSION (
 )
 echo.
 
-REM Main menu
+REM ============================================================================
+REM Main Menu Loop
+REM ============================================================================
 :menu
+cls
+title Windows Telemetry Blocker v1.0
+timeout /t 1 /nobreak >nul
 echo.
-echo ===================================
-echo         MENU
-echo ===================================
-echo 1. Run Interactive Script (Recommended)
-echo 2. Rollback (Undo telemetry blocking)
-echo 3. System Restore (Full system recovery)
-echo 4. Exit
-echo ===================================
+echo ======================================================================
 echo.
-echo [SAFETY] Note: A system restore point is created before any changes.
-echo [SAFETY] Press Ctrl+C if the script is running incorrectly.
+echo         WINDOWS TELEMETRY BLOCKER v1.0 - Main Menu
 echo.
-set /p CHOICE="Enter choice [1-4]: "
+echo ======================================================================
+echo.
+echo EXECUTION MODES:
+echo.
+echo  [1] v1.0 GUI Launcher (NEW - Recommended)
+echo      Modern interface with monitoring and scheduling
+echo.
+echo  [2] v0.9 Interactive Script
+echo      Classic interactive telemetry blocker
+echo.
+echo RECOVERY AND MANAGEMENT:
+echo.
+echo  [3] Rollback (Undo recent changes)
+echo      Restore services and registry to previous state
+echo.
+echo  [4] System Restore (Full recovery)
+echo      Use Windows System Restore point
+echo.
+echo  [5] Exit
+echo      Close this launcher
+echo.
+echo ======================================================================
+echo.
+echo SAFETY NOTICE:
+echo A system restore point is created before any changes.
+echo Press Ctrl+C at any time to safely interrupt execution.
+echo.
+set /p CHOICE="Enter choice [1-5]: "
 
+REM ============================================================================
+REM Menu Option Handlers
+REM ============================================================================
 if "%CHOICE%"=="1" (
-    echo [INFO] Launching interactive script...
+    REM Check if v1.0 launcher exists
+    if not exist "%V1_LAUNCHER%" (
+        echo [ERROR] v1.0 Launcher not found: %V1_LAUNCHER%
+        echo [WARN] Falling back to v0.9 script.
+        echo.
+        goto choice_2
+    )
+    echo [INFO] Launching v1.0 GUI Launcher...
+    echo [SAFETY] Recording execution state...
+    echo v1.0 Launcher - Started %date% %time% > "%LAST_EXECUTION_STATE%"
+    echo %date% %time% [EXECUTION] v1.0 launcher started >> "%SAFETY_LOG%"
+    echo.
+    "%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%V1_LAUNCHER%"
+    set LAUNCH_ERROR=!errorlevel!
+    echo.
+    echo [STATUS] v1.0 Launcher has closed.
+    if !LAUNCH_ERROR! neq 0 (
+        echo %date% %time% [ERROR] v1.0 launcher ended with error code !LAUNCH_ERROR! >> "%SAFETY_LOG%"
+        echo [WARN] Launcher ended with error code: !LAUNCH_ERROR!
+    ) else (
+        echo %date% %time% [SUCCESS] v1.0 launcher completed successfully >> "%SAFETY_LOG%"
+        del "%LAST_EXECUTION_STATE%"
+    )
+    echo.
+    pause
+    goto menu
+)
+
+:choice_2
+if "%CHOICE%"=="2" (
+    echo [INFO] Launching v0.9 interactive script...
     echo [SAFETY] Recording execution state...
     echo Interactive Mode - Started %date% %time% > "%LAST_EXECUTION_STATE%"
     echo %date% %time% [EXECUTION] Interactive mode started >> "%SAFETY_LOG%"
@@ -169,7 +225,7 @@ if "%CHOICE%"=="1" (
     goto menu
 )
 
-if "%CHOICE%"=="2" (
+if "%CHOICE%"=="3" (
     echo [INFO] Launching rollback...
     echo [SAFETY] Recording execution state...
     echo Rollback Mode - Started %date% %time% > "%LAST_EXECUTION_STATE%"
@@ -194,7 +250,7 @@ if "%CHOICE%"=="2" (
     goto menu
 )
 
-if "%CHOICE%"=="3" (
+if "%CHOICE%"=="4" (
     echo [INFO] Launching system restore...
     echo [SAFETY] Recording execution state...
     echo System Restore Mode - Started %date% %time% > "%LAST_EXECUTION_STATE%"
@@ -220,11 +276,15 @@ if "%CHOICE%"=="3" (
     goto menu
 )
 
-if "%CHOICE%"=="4" (
+if "%CHOICE%"=="5" (
     echo [INFO] Exiting...
     echo %date% %time% [INFO] Launcher exiting normally >> "%SAFETY_LOG%"
     exit /b 0
 )
 
+REM ============================================================================
+REM Invalid Choice Handler
+REM ============================================================================
 echo Invalid choice. Please try again.
 goto menu
+

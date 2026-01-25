@@ -1,4 +1,4 @@
-# 🛡️ Windows Telemetry Blocker
+# Windows Telemetry Blocker
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PowerShell](https://img.shields.io/badge/PowerShell-%3E%3D5.1-blue)](https://github.com/PowerShell/PowerShell)
@@ -6,41 +6,36 @@
 [![Issues](https://img.shields.io/github/issues/N0tHorizon/WindowsTelemetryBlocker)](https://github.com/N0tHorizon/WindowsTelemetryBlocker/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/N0tHorizon/WindowsTelemetryBlocker)](https://github.com/N0tHorizon/WindowsTelemetryBlocker/pulls)
 [![Last Commit](https://img.shields.io/github/last-commit/N0tHorizon/WindowsTelemetryBlocker)](https://github.com/N0tHorizon/WindowsTelemetryBlocker/commits/main)
-[![Code Size](https://img.shields.io/github/languages/code-size/N0tHorizon/WindowsTelemetryBlocker)](https://github.com/N0tHorizon/WindowsTelemetryBlocker)
 
-A lightweight, open-source toolkit to disable Windows telemetry and enhance privacy on Windows 10 and 11 using PowerShell scripts. Inspired by tools like ShutUp10++, but fully transparent, modular, and scriptable.
+A comprehensive, open-source toolkit to disable Windows telemetry and enhance privacy on Windows 10 and 11. Built with PowerShell, fully transparent, modular, and scriptable. Includes GUI, scheduling, monitoring, and advanced filtering capabilities.
 
-## ✨ Features
+## Features
 
--  **Disable Windows Telemetry**: Blocks data collection and reporting to Microsoft.
--  **Block Feedback & Advertising**: Prevents feedback prompts and advertising ID usage.
--  **Stop Unnecessary Services**: Disables telemetry-related services like DiagTrack, Xbox services, etc.
--  **Remove Bloatware**: Optionally removes pre-installed apps and disables background apps.
--  **Interactive Module Selection**: Choose which modules to run via CLI or GUI-like menu.
--  **Easy Rollback**: Revert changes with dedicated rollback scripts.
--  **Advanced Logging**: Comprehensive logs, error tracking, and execution statistics.
--  **Modular Design**: Independent modules for telemetry, services, apps, and misc tweaks.
--  **System Restore Points**: Automatic creation before changes for safety.
--  **Multiple Execution Modes**: Interactive, batch, dry-run, and custom profiles.
--  **Audit Logging**: Logs to Windows Event Viewer for compliance.
--  **Auto-Update**: Fetch latest versions from GitHub.
--  **Integrity Checks**: Verifies script and module integrity.
--  **Detailed Reports**: Markdown reports of changes and execution results.
+- **Disable Windows Telemetry** - Blocks data collection and reporting to Microsoft
+- **Block Feedback & Advertising** - Prevents feedback prompts and advertising ID usage
+- **Stop Unnecessary Services** - Disables telemetry-related services like DiagTrack, Xbox services, etc.
+- **Remove Bloatware** - Optionally removes pre-installed apps and disables background apps
+- **Interactive Module Selection** - Choose which modules to run via CLI
+- **Easy Rollback** - Revert changes with dedicated rollback scripts
+- **Advanced Logging** - Comprehensive logs, error tracking, and statistics
+- **Modular Design** - 4 core modules with clear dependencies
+- **System Restore Points** - Automatic creation before changes for safety
+- **Multiple Execution Modes** - Interactive, batch, dry-run, and custom profiles
+- **Audit Logging** - Logs to Windows Event Viewer for compliance
+- **Auto-Update** - Fetch latest versions from GitHub
+- **Integrity Checks** - Verifies script and module integrity
+- **Detailed Reports** - Markdown reports of changes and execution results
 
-## 🚀 Quick Start
+## Quick Start
 
 1. **Download**: Clone or download the repository.
 2. **Run as Administrator**: Right-click `run.bat` and select "Run as administrator".
 3. **Choose Mode**:
-   - **Minimal**: Basic telemetry blocking.
-   - **Balanced**: Telemetry + services.
-   - **Max Privacy**: All modules.
-   - **Custom**: Select specific modules.
+   - **Option 1**: v1.0 GUI Launcher (if available) - Modern interface with monitoring and scheduling
+   - **Option 2**: v0.9 Interactive Script - Classic interactive telemetry blocker with module selection
+   - **Option 3**: Rollback - Undo recent changes
+   - **Option 4**: System Restore - Use Windows System Restore point
 4. **Review Logs**: Check `telemetry-blocker.log` and `telemetry-blocker-report.md` for results.
-
-## 📦 Installation
-
-No installation required! Simply download the repository and run `run.bat` as administrator.
 
 ### Prerequisites
 - Windows 10 version 2004 or later / Windows 11.
@@ -49,23 +44,6 @@ No installation required! Simply download the repository and run `run.bat` as ad
 
 The launcher (`run.bat`) will automatically check for prerequisites and attempt self-healing if files are missing.
 
-## 📋 Usage
-
-### Launcher (run.bat) - Recommended
-
-The batch file provides a user-friendly menu:
-
-1. **Minimal Profile**: Runs telemetry module only.
-2. **Balanced Profile**: Runs telemetry and services modules.
-3. **Max Privacy Profile**: Runs all modules.
-4. **Custom Profile**: Interactive module selection.
-5. **Run Interactive Script**: Full PowerShell script with prompts.
-6. **Restore via Rollback**: Revert changes using rollback scripts.
-7. **Restore via System Restore**: Use Windows System Restore.
-8. **Update Script**: Download latest versions.
-9. **Self-Healing Mode**: Re-download missing files.
-10. **Exit**.
-
 ### PowerShell Script (windowstelementryblocker.ps1)
 
 Run directly with parameters:
@@ -73,22 +51,7 @@ Run directly with parameters:
 ```powershell
 .\windowstelementryblocker.ps1 -All -EnableAuditLog
 ```
-
-#### Console Parameters (For running in a console without run.bat)
-
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `-All` | Run all modules | `.\script.ps1 -All` |
-| `-Modules <list>` | Specify modules (comma-separated) | `.\script.ps1 -Modules telemetry,services` |
-| `-Exclude <list>` | Exclude specific modules | `.\script.ps1 -All -Exclude apps` |
-| `-Interactive` | Interactive mode with prompts | `.\script.ps1 -Interactive` |
-| `-DryRun` | Preview changes without applying | `.\script.ps1 -All -DryRun` |
-| `-WhatIf` | Alias for DryRun | `.\script.ps1 -WhatIf` |
-| `-RollbackOnFailure` | Auto-rollback if a module fails | `.\script.ps1 -All -RollbackOnFailure` |
-| `-Rollback` | Run rollback for all modules | `.\script.ps1 -Rollback` |
-| `-RestorePoint` | Restore via system restore/registry backup | `.\script.ps1 -RestorePoint` |
-| `-Update` | Check and update script/modules | `.\script.ps1 -Update` |
-| `-EnableAuditLog` | Log to Windows Event Viewer | `.\script.ps1 -All -EnableAuditLog` |
+## Usage
 
 #### Module Dependencies
 
@@ -99,7 +62,7 @@ Run directly with parameters:
 
 Dependencies are resolved automatically.
 
-## 🧩 Modules
+## Modules
 
 | Module | Description | Rollback Available |
 |--------|-------------|-------------------|
@@ -135,12 +98,12 @@ Disables and stops the following services:
 - Disables CEIP in `HKLM:\SOFTWARE\Microsoft\SQMClient\Windows`
 - Disables Windows Error Reporting in `HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting`
 
-## ⏪ Rollback
+## Rollback
 
 Rollback scripts are available for most modules in `modules/*-rollback.ps1`.
 
 ### Using Rollback
-- Via Launcher: Option 6 "Restore via builtin rollback system"
+- Via Launcher: Option 3 "Rollback (Undo recent changes)"
 - Via Script: `.\windowstelementryblocker.ps1 -Rollback`
 - Individual: Run specific rollback script, e.g., `.\modules\telemetry-rollback.ps1`
 
@@ -152,7 +115,7 @@ Rollback scripts are available for most modules in `modules/*-rollback.ps1`.
 
 Registry backups are created in `registry-backups/` before changes.
 
-## 📝 Logging and Reports
+## Logging and Reports
 
 ### Log Files
 - `telemetry-blocker.log`: Main execution log with timestamps.
@@ -170,7 +133,7 @@ Post-execution, a Markdown report is generated with:
 - Summary of changes
 - Errors (if any)
 
-## ⚙️ Customization
+## Customization
 
 ### Adding Modules
 1. Create `modules/yourmodule.ps1` with functions and return `$true` on success.
@@ -186,7 +149,7 @@ Located in `modules/common.ps1`:
 ### Profiles
 Customize profiles in `run.bat` by editing the module lists.
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 - **"Access Denied"**: Run as administrator.
@@ -203,7 +166,7 @@ Use `-DryRun` to preview changes without applying them.
 ### Update Issues
 If update fails, download manually from GitHub.
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
@@ -212,11 +175,11 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - Test thoroughly
 - Submit a pull request
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Inspired by [ShutUp10++](https://www.oo-software.com/en/shutup10)
 - Thanks to the open-source community and contributors

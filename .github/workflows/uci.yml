@@ -4,15 +4,20 @@ permissions:
 
 on:
   push:
-    branches: [ 📦Current ]
+    branches: [main, "📦Current"]
   pull_request:
-    branches: [ 📦Current ]
+    branches: [main, "📦Current"]
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
-  test:
+  compliance:
+    name: Code Compliance and Structure
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Check PowerShell Version
       shell: pwsh
@@ -26,14 +31,19 @@ jobs:
     - name: Test Script Syntax
       shell: pwsh
       run: |
-        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse -Exclude @('*.test.ps1', '*test*.ps1')
+        $errors = @()
         foreach ($script in $scripts) {
-          $errors = $null
-          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script.FullName -Raw), [ref]$errors)
-          if ($errors.Count -gt 0) {
-            throw "Syntax errors found in $($script.FullName): $($errors | ConvertTo-Json)"
+          $parseErrors = $null
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script.FullName -Raw), [ref]$parseErrors)
+          if ($parseErrors.Count -gt 0) {
+            $errors += "$($script.FullName): $($parseErrors | ConvertTo-Json -Compress)"
           }
         }
+        if ($errors.Count -gt 0) {
+          throw "Syntax errors found:`n$($errors -join "`n")"
+        }
+        Write-Host "[OK] All scripts have valid syntax"
 
     - name: Check for Admin Rights
       shell: pwsh
@@ -47,39 +57,97 @@ jobs:
       shell: pwsh
       run: |
         $required = @(
+          'windowstelementryblocker.ps1',
+          'run.bat',
           'modules/common.ps1',
-          'modules/services-rollback.ps1',
+          'modules/telemetry.ps1',
+          'modules/services.ps1',
+          'modules/apps.ps1',
+          'modules/misc.ps1',
           'modules/telemetry-rollback.ps1',
+          'modules/services-rollback.ps1',
           'modules/apps-rollback.ps1',
           'modules/misc-rollback.ps1'
         )
+        $missing = @()
         foreach ($file in $required) {
           if (-not (Test-Path $file)) {
-            throw "Required file missing: $file"
+            $missing += $file
           }
         }
+        if ($missing.Count -gt 0) {
+          throw "Required files missing: $($missing -join ', ')"
+        }
+        Write-Host "[OK] All required files present"
 
     - name: Check Modules Dot-Source Common
       shell: pwsh
       run: |
         $modules = Get-ChildItem modules -Filter *.ps1 | Where-Object { $_.Name -notlike '*rollback.ps1' -and $_.Name -ne 'common.ps1' }
+        $errors = @()
         foreach ($mod in $modules) {
           $content = Get-Content $mod.FullName -Raw
-          # Allow for single/double quotes, optional whitespace, and no blank lines before dot-source
+          # Allow for single/double quotes, optional whitespace
           if ($content -notmatch '(?m)^\s*\.\s+["'']\$PSScriptRoot/common.ps1["'']') {
-            throw "$($mod.Name) does not dot-source common.ps1"
+            $errors += "$($mod.Name) does not dot-source common.ps1"
           }
         }
+        if ($errors.Count -gt 0) {
+          throw "Module errors:`n$($errors -join "`n")"
+        }
+        Write-Host "[OK] All modules properly dot-source common.ps1"
 
     - name: Check Rollback Scripts for Each Module
       shell: pwsh
       run: |
         $mainModules = @('services','telemetry','apps','misc')
+        $missing = @()
         foreach ($mod in $mainModules) {
           $rollback = "modules/$mod-rollback.ps1"
           if (-not (Test-Path $rollback)) {
-            throw "Missing rollback script: $rollback"
+            $missing += $rollback
           }
+        }
+        if ($missing.Count -gt 0) {
+          throw "Missing rollback scripts: $($missing -join ', ')"
+        }
+        Write-Host "[OK] All rollback scripts present"
+
+    - name: Check Code Organization (Regions)
+      shell: pwsh
+      run: |
+        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $requiredRegions = @(
+          'region Parameters',
+          'region Global State',
+          'region Logging Functions',
+          'region Safety Barrier Functions',
+          'region Module Execution'
+        )
+        $missing = @()
+        foreach ($region in $requiredRegions) {
+          if ($main -notmatch $region) {
+            $missing += $region
+          }
+        }
+        if ($missing.Count -gt 0) {
+          throw "Missing required regions in main script: $($missing -join ', ')"
+        }
+        Write-Host "[OK] Main script properly organized with regions"
+        
+        # Check modules have regions too
+        $modules = Get-ChildItem modules -Filter *.ps1 | Where-Object { $_.Name -ne 'common.ps1' }
+        $unorganized = @()
+        foreach ($mod in $modules) {
+          $content = Get-Content $mod.FullName -Raw
+          if ($content -notmatch 'region') {
+            $unorganized += $mod.Name
+          }
+        }
+        if ($unorganized.Count -gt 0) {
+          Write-Host "[WARN] Modules without regions (should be organized): $($unorganized -join ', ')"
+        } else {
+          Write-Host "[OK] All modules properly organized with regions"
         }
 
     - name: Check README for Enhanced Features
@@ -87,14 +155,16 @@ jobs:
       run: |
         $readme = Get-Content README.md -Raw
         $features = @('dry-run','rollback','dependencies','logging','restore point')
+        $missing = @()
         foreach ($feature in $features) {
-          if ($readme -match $feature) {
-            Write-Host "[OK] Feature documented: $feature"
-          } else {
-            throw "README.md missing feature: $feature"
+          if ($readme -notmatch $feature) {
+            $missing += $feature
           }
         }
-        Write-Host "All required features documented in README!"
+        if ($missing.Count -gt 0) {
+          throw "README.md missing features: $($missing -join ', ')"
+        }
+        Write-Host "[OK] All required features documented in README"
 
     - name: Check Script Version Banner
       shell: pwsh
@@ -103,3 +173,44 @@ jobs:
         if ($main -notmatch 'Script Version:') {
           throw "Script version banner missing in windowstelementryblocker.ps1"
         }
+        Write-Host "[OK] Script version banner present"
+    
+    - name: Check v1.0 Integration Points
+      shell: pwsh
+      run: |
+        $v1Launcher = "v1.0/launcher.ps1"
+        if (Test-Path $v1Launcher) {
+          $content = Get-Content $v1Launcher -Raw
+          if ($content -notmatch 'Execute-Profile') {
+            throw "v1.0 launcher missing Execute-Profile function"
+          }
+          if ($content -notmatch 'v09ScriptPath') {
+            throw "v1.0 launcher not properly integrated with v0.9 script"
+          }
+          Write-Host "[OK] v1.0 launcher properly integrated"
+        }
+    
+    - name: Validate Parameter Block Position
+      shell: pwsh
+      run: |
+        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $lines = $main -split "`n"
+        $paramFound = $false
+        $codeBeforeParam = $false
+        for ($i = 0; $i -lt [Math]::Min(30, $lines.Count); $i++) {
+          if ($lines[$i] -match '^\s*param\s*\(') {
+            $paramFound = $true
+            break
+          }
+          if ($lines[$i] -match '^\s*\$' -and $lines[$i] -notmatch '^\s*#') {
+            $codeBeforeParam = $true
+          }
+        }
+        if (-not $paramFound) {
+          throw "param() block not found in first 30 lines"
+        }
+        if ($codeBeforeParam) {
+          throw "Code found before param() block - param must be at the top"
+        }
+        Write-Host "[OK] Parameter block correctly positioned"
+

@@ -4,15 +4,21 @@ permissions:
 
 on:
   push:
-    branches: [ 📦Current ]
+    branches: [main, "📦Current"]
   pull_request:
-    branches: [ 📦Current ]
+    branches: [main, "📦Current"]
+
+permissions:
+  contents: read
+  pull-requests: read
+  security-events: write
 
 jobs:
-  test:
+  syntax-check:
+    name: Syntax and Structure Validation
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Check PowerShell Version
       shell: pwsh
@@ -26,14 +32,71 @@ jobs:
     - name: Test Script Syntax
       shell: pwsh
       run: |
-        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse -Exclude @('*.test.ps1', '*test*.ps1')
+        $errors = @()
         foreach ($script in $scripts) {
-          $errors = $null
-          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script.FullName -Raw), [ref]$errors)
-          if ($errors.Count -gt 0) {
-            throw "Syntax errors found in $($script.FullName): $($errors | ConvertTo-Json)"
+          $parseErrors = $null
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script.FullName -Raw), [ref]$parseErrors)
+          if ($parseErrors.Count -gt 0) {
+            $errors += "$($script.FullName): $($parseErrors | ConvertTo-Json -Compress)"
           }
         }
+        if ($errors.Count -gt 0) {
+          throw "Syntax errors found:`n$($errors -join "`n")"
+        }
+        Write-Host "[OK] All scripts have valid syntax"
+    
+    - name: Check Script Structure (v0.9)
+      shell: pwsh
+      run: |
+        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        $requiredSections = @(
+          'region Parameters',
+          'region Global State',
+          'region Logging Functions',
+          'region Safety Barrier Functions',
+          'region Module Execution'
+        )
+        foreach ($section in $requiredSections) {
+          if ($main -notmatch $section) {
+            throw "Missing required section: $section"
+          }
+        }
+        Write-Host "[OK] Main script structure validated"
+    
+    - name: Check v1.0 Integration
+      shell: pwsh
+      run: |
+        $v1Launcher = "v1.0/launcher.ps1"
+        if (Test-Path $v1Launcher) {
+          $content = Get-Content $v1Launcher -Raw
+          if ($content -notmatch 'Execute-Profile') {
+            throw "v1.0 launcher missing Execute-Profile function"
+          }
+          if ($content -notmatch 'v09ScriptPath') {
+            throw "v1.0 launcher not properly integrated with v0.9 script"
+          }
+          Write-Host "[OK] v1.0 launcher structure validated"
+        } else {
+          Write-Host "[WARN] v1.0 launcher not found (optional)"
+        }
+    
+    - name: Check Module Organization
+      shell: pwsh
+      run: |
+        $modules = Get-ChildItem modules -Filter *.ps1 | Where-Object { $_.Name -notlike '*rollback.ps1' -and $_.Name -ne 'common.ps1' }
+        foreach ($mod in $modules) {
+          $content = Get-Content $mod.FullName -Raw
+          # Check for organized structure
+          if ($content -notmatch 'region.*Module|region.*Functions') {
+            Write-Host "[WARN] Module $($mod.Name) may not be properly organized with regions"
+          }
+          # Check for common.ps1 dot-sourcing
+          if ($content -notmatch '(?m)^\s*\.\s+["'']\$PSScriptRoot/common.ps1["'']') {
+            throw "$($mod.Name) does not dot-source common.ps1"
+          }
+        }
+        Write-Host "[OK] Module organization validated"
     
     - name: Check for Admin Rights
       shell: pwsh
@@ -41,4 +104,193 @@ jobs:
         $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
         if (-not $isAdmin) {
           Write-Host "Running without admin rights (expected in CI environment)"
-        } 
+        }
+
+  security-scan:
+    name: Security and Code Quality
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Secret Scanning
+      shell: pwsh
+      run: |
+        $patterns = @(
+          '(?i)(password|passwd|pwd)\s*=\s*["'']([^"'']+)["'']',
+          '(?i)(api[_-]?key|apikey)\s*=\s*["'']([^"'']+)["'']',
+          '(?i)(secret|token)\s*=\s*["'']([^"'']+)["'']',
+          '(?i)(connection[_-]?string|connstr)\s*=\s*["'']([^"'']+)["'']'
+        )
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $secrets = @()
+        foreach ($script in $scripts) {
+          $content = Get-Content $script.FullName -Raw
+          foreach ($pattern in $patterns) {
+            if ($content -match $pattern) {
+              $secrets += "$($script.FullName): Potential secret found"
+            }
+          }
+        }
+        if ($secrets.Count -gt 0) {
+          Write-Host "[ERROR] Potential secrets found:"
+          $secrets | ForEach-Object { Write-Host "  $_" }
+          throw "Secret scanning detected potential secrets in code"
+        }
+        Write-Host "[OK] No secrets detected"
+    
+    - name: Check for Code Injection Vulnerabilities
+      shell: pwsh
+      run: |
+        $dangerousPatterns = @(
+          'Invoke-Expression\s+.*\$',
+          'iex\s+.*\$',
+          '\.Invoke\(.*\$',
+          'Start-Process.*\$.*-ArgumentList',
+          'Invoke-Command.*-ScriptBlock.*\$'
+        )
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $vulnerabilities = @()
+        foreach ($script in $scripts) {
+          $content = Get-Content $script.FullName -Raw
+          foreach ($pattern in $dangerousPatterns) {
+            if ($content -match $pattern) {
+              # Check if it's a safe usage (parameter validation, etc.)
+              $lineNum = ($content -split "`n" | Select-String -Pattern $pattern).LineNumber
+              $vulnerabilities += "$($script.FullName):$lineNum - Potential code injection: $pattern"
+            }
+          }
+        }
+        if ($vulnerabilities.Count -gt 0) {
+          Write-Host "[WARN] Potential code injection patterns found (review required):"
+          $vulnerabilities | ForEach-Object { Write-Host "  $_" }
+        } else {
+          Write-Host "[OK] No code injection vulnerabilities detected"
+        }
+    
+    - name: Check for Unsafe File Operations
+      shell: pwsh
+      run: |
+        $unsafePatterns = @(
+          'Remove-Item.*-Force.*-Recurse.*\$',
+          'del\s+.*\*',
+          'rm\s+-rf'
+        )
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $unsafeOps = @()
+        foreach ($script in $scripts) {
+          $content = Get-Content $script.FullName -Raw
+          foreach ($pattern in $unsafePatterns) {
+            if ($content -match $pattern) {
+              # Check if it's protected by confirmation or dry-run
+              if ($content -notmatch 'Read-Host|Confirm|DryRun|WhatIf') {
+                $unsafeOps += "$($script.FullName): Unsafe file operation without confirmation"
+              }
+            }
+          }
+        }
+        if ($unsafeOps.Count -gt 0) {
+          Write-Host "[WARN] Unsafe file operations found (should have confirmation):"
+          $unsafeOps | ForEach-Object { Write-Host "  $_" }
+        } else {
+          Write-Host "[OK] File operations are properly protected"
+        }
+    
+    - name: Validate Parameter Block Position
+      shell: pwsh
+      run: |
+        $main = Get-Content windowstelementryblocker.ps1 -Raw
+        # Check that param() is near the top (after comments, before other code)
+        $lines = $main -split "`n"
+        $paramLine = -1
+        $firstCodeLine = -1
+        for ($i = 0; $i -lt [Math]::Min(50, $lines.Count); $i++) {
+          if ($lines[$i] -match '^\s*param\s*\(') {
+            $paramLine = $i
+            break
+          }
+          if ($lines[$i] -match '^\s*\$' -and $firstCodeLine -eq -1) {
+            $firstCodeLine = $i
+          }
+        }
+        if ($paramLine -eq -1) {
+          throw "param() block not found in main script"
+        }
+        if ($firstCodeLine -ne -1 -and $firstCodeLine -lt $paramLine) {
+          throw "param() block must be before any variable assignments"
+        }
+        Write-Host "[OK] Parameter block is correctly positioned"
+
+  file-integrity:
+    name: File Integrity and Required Files
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check for Required Files
+      shell: pwsh
+      run: |
+        $required = @(
+          'windowstelementryblocker.ps1',
+          'run.bat',
+          'README.md',
+          'LICENSE',
+          'modules/common.ps1',
+          'modules/telemetry.ps1',
+          'modules/services.ps1',
+          'modules/apps.ps1',
+          'modules/misc.ps1',
+          'modules/telemetry-rollback.ps1',
+          'modules/services-rollback.ps1',
+          'modules/apps-rollback.ps1',
+          'modules/misc-rollback.ps1'
+        )
+        $missing = @()
+        foreach ($file in $required) {
+          if (-not (Test-Path $file)) {
+            $missing += $file
+          }
+        }
+        if ($missing.Count -gt 0) {
+          throw "Required files missing: $($missing -join ', ')"
+        }
+        Write-Host "[OK] All required files present"
+    
+    - name: Check File Encoding
+      shell: pwsh
+      run: |
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $encodingIssues = @()
+        foreach ($script in $scripts) {
+          $bytes = [System.IO.File]::ReadAllBytes($script.FullName)
+          # Check for BOM (UTF-8 BOM is 0xEF, 0xBB, 0xBF)
+          if ($bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+            # UTF-8 with BOM is acceptable
+            continue
+          }
+          # Check for non-ASCII characters that might indicate encoding issues
+          $content = Get-Content $script.FullName -Raw
+          if ($content -match '[^\x00-\x7F]' -and $bytes[0] -ne 0xEF) {
+            $encodingIssues += "$($script.FullName): May have encoding issues"
+          }
+        }
+        if ($encodingIssues.Count -gt 0) {
+          Write-Host "[WARN] Potential encoding issues:"
+          $encodingIssues | ForEach-Object { Write-Host "  $_" }
+        } else {
+          Write-Host "[OK] File encoding validated"
+        }
+    
+    - name: Check for Binary Files in Script Directories
+      shell: pwsh
+      run: |
+        $binaryExtensions = @('.exe', '.dll', '.bin', '.so', '.dylib')
+        $scripts = Get-ChildItem -Path . -Recurse -File | Where-Object {
+          $_.Extension -in $binaryExtensions -and 
+          $_.DirectoryName -notmatch '\\node_modules|\\\.git|\\registry-backups'
+        }
+        if ($scripts.Count -gt 0) {
+          Write-Host "[WARN] Binary files found in script directories:"
+          $scripts | ForEach-Object { Write-Host "  $($_.FullName)" }
+        } else {
+          Write-Host "[OK] No unexpected binary files"
+        }

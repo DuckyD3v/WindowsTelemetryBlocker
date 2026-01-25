@@ -2,12 +2,29 @@
 *.ps1~
 *.psm1~
 *.psd1~
+
+# Log files (generated at runtime)
 *.log
+telemetry-blocker*.log
+telemetry-blocker*.md
+
+# Backup files
 *.bak
 *.tmp
+*.temp
+*.backup
+*_backup
 
 # Local module output
 modules/*.log
+
+# Registry backups (user-generated)
+registry-backups/*.reg
+!registry-backups/.gitkeep
+
+# Execution state files
+.last-execution-state
+telemetry-blocker-safety.log
 
 # VSCode project settings
 .vscode/
@@ -17,22 +34,11 @@ modules/*.log
 Thumbs.db
 .DS_Store
 desktop.ini
-
-# GitHub Actions cache or artifacts (if used later)
-.github/workflows/*.log
-*.coverage
-*.testresult
-
-# Ignore compiled binaries/scripts (if build system added later)
-bin/
-out/
-
-# Windows system files
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
-# PowerShell files
+# PowerShell files (compiled/compiled artifacts)
 *.ps1xml
 *.psc1
 *.psd1
@@ -42,11 +48,9 @@ $RECYCLE.BIN/
 *.ps1.config
 
 # Logs and temporary files
-*.log
-*.tmp
-*.temp
 logs/
 temp/
+tmp/
 
 # IDE and editor files
 .idea/
@@ -54,13 +58,51 @@ temp/
 *.swo
 *~
 
-# Backup files
-*.bak
-*.backup
-*_backup
-
 # User-specific files
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
+
+# Build artifacts
+bin/
+out/
+dist/
+build/
+
+# Test artifacts
+*.coverage
+*.testresult
+TestResults/
+
+# Package files
+*.zip
+*.tar.gz
+*.rar
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# VS Code directories
+.vscode/
+
+# PowerShell test results
+TestResults.xml
+
+# Temporary PowerShell files
+temp_*.ps1
+registry-backups/regbackup_20260125_125310.reg

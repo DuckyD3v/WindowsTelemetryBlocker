@@ -1,8 +1,15 @@
+# ============================================================================
+# Telemetry Module
+# ============================================================================
+# Description: Disables Windows telemetry, feedback, advertising ID, and Cortana
+# Dependencies: None
+# Rollback: Available (telemetry-rollback.ps1)
+# ============================================================================
 
-<# telemetry.ps1 - Disables Windows telemetry, feedback, advertising ID, and Cortana #>
 param()
 . "$PSScriptRoot/common.ps1"
 
+#region Telemetry Functions
 function Disable-Telemetry {
     Write-ModuleLog "Disabling telemetry..."
     try {
@@ -60,13 +67,16 @@ function Disable-Cortana {
         return $false
     }
 }
+#endregion
 
+#region Module Execution
 Write-ModuleLog "Starting telemetry module..."
 $results = @()
 $results += Disable-Telemetry
 $results += Disable-Feedback
 $results += Disable-AdvertisingID
 $results += Disable-Cortana
+
 if ($results -contains $false) {
     Write-ModuleLog "Telemetry module completed with errors." 'ERROR'
     return $false
@@ -74,3 +84,4 @@ if ($results -contains $false) {
     Write-ModuleLog "Telemetry module completed successfully."
     return $true
 }
+#endregion

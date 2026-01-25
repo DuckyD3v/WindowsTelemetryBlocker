@@ -1,5 +1,11 @@
-# Rollback script for services.ps1
-# Re-enables previously disabled services (example logic)
+# ============================================================================
+# Services Module Rollback
+# ============================================================================
+# Description: Re-enables previously disabled services
+# Module: services.ps1
+# ============================================================================
+
+#region Service Configuration
 $servicesToEnable = @(
     "DiagTrack",
     "dmwappushservice",
@@ -13,6 +19,9 @@ $servicesToEnable = @(
     "Fax",
     "WerSvc"
 )
+#endregion
+
+#region Rollback Execution
 foreach ($service in $servicesToEnable) {
     if (Get-Service $service -ErrorAction SilentlyContinue) {
         try {
@@ -23,3 +32,4 @@ foreach ($service in $servicesToEnable) {
         }
     }
 }
+#endregion

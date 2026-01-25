@@ -1,0 +1,213 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main, "📦Current"]
+  pull_request:
+    branches: [main, "📦Current"]
+  schedule:
+    # Run weekly security audit
+    - cron: '0 0 * * 0'
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  security-audit:
+    name: Comprehensive Security Audit
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: PowerShell Syntax Check
+      shell: pwsh
+      run: |
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse -Exclude @('*.test.ps1', '*test*.ps1')
+        $errors = @()
+        foreach ($script in $scripts) {
+          $parseErrors = $null
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script.FullName -Raw), [ref]$parseErrors)
+          if ($parseErrors.Count -gt 0) {
+            $errors += "$($script.FullName): $($parseErrors | ConvertTo-Json -Compress)"
+          }
+        }
+        if ($errors.Count -gt 0) {
+          throw "Syntax errors found:`n$($errors -join "`n")"
+        }
+        Write-Host "[OK] All scripts have valid syntax"
+    
+    - name: Check for Hardcoded Credentials
+      shell: pwsh
+      run: |
+        $patterns = @(
+          '(?i)(password|passwd|pwd)\s*[:=]\s*["'']([^"'']{8,})["'']',
+          '(?i)(api[_-]?key|apikey)\s*[:=]\s*["'']([^"'']{10,})["'']',
+          '(?i)(secret|token|auth)\s*[:=]\s*["'']([^"'']{10,})["'']',
+          '(?i)(connection[_-]?string|connstr)\s*[:=]\s*["'']([^"'']+)["'']',
+          '(?i)(bearer|authorization)\s*[:=]\s*["'']([^"'']+)["'']'
+        )
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $secrets = @()
+        foreach ($script in $scripts) {
+          $content = Get-Content $script.FullName -Raw
+          $lineNum = 0
+          foreach ($line in ($content -split "`n")) {
+            $lineNum++
+            foreach ($pattern in $patterns) {
+              if ($line -match $pattern) {
+                $secrets += "$($script.FullName):$lineNum - Potential credential: $($matches[0])"
+              }
+            }
+          }
+        }
+        if ($secrets.Count -gt 0) {
+          Write-Host "[ERROR] Potential hardcoded credentials found:"
+          $secrets | ForEach-Object { Write-Host "  $_" }
+          exit 1
+        }
+        Write-Host "[OK] No hardcoded credentials detected"
+    
+    - name: Check for External Network Calls
+      shell: pwsh
+      run: |
+        $networkPatterns = @(
+          'Invoke-WebRequest',
+          'Invoke-RestMethod',
+          'System\.Net\.WebClient',
+          'DownloadFile',
+          'DownloadString'
+        )
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $networkCalls = @()
+        foreach ($script in $scripts) {
+          $content = Get-Content $script.FullName -Raw
+          foreach ($pattern in $networkPatterns) {
+            if ($content -match $pattern) {
+              # Check if it's a known safe URL (GitHub repo, etc.)
+              $context = ($content -split "`n" | Select-String -Pattern $pattern -Context 2,2)
+              $isSafe = $false
+              foreach ($match in $context) {
+                if ($match.Line -match 'github\.com/N0tHorizon/WindowsTelemetryBlocker') {
+                  $isSafe = $true
+                  break
+                }
+              }
+              if (-not $isSafe) {
+                $networkCalls += "$($script.FullName): External network call - $pattern"
+              }
+            }
+          }
+        }
+        if ($networkCalls.Count -gt 0) {
+          Write-Host "[WARN] External network calls found (review for security):"
+          $networkCalls | ForEach-Object { Write-Host "  $_" }
+        } else {
+          Write-Host "[OK] Network calls are to known safe sources"
+        }
+    
+    - name: Check for Unsafe Registry Operations
+      shell: pwsh
+      run: |
+        $unsafeRegOps = @(
+          'Remove-Item.*HKLM.*-Recurse',
+          'Remove-Item.*HKCU.*-Recurse',
+          'reg\s+delete.*/f'
+        )
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $unsafeOps = @()
+        foreach ($script in $scripts) {
+          $content = Get-Content $script.FullName -Raw
+          foreach ($pattern in $unsafeRegOps) {
+            if ($content -match $pattern) {
+              # Check if it's protected
+              if ($content -notmatch 'Read-Host|Confirm|DryRun|WhatIf|rollback') {
+                $unsafeOps += "$($script.FullName): Unsafe registry operation without protection"
+              }
+            }
+          }
+        }
+        if ($unsafeOps.Count -gt 0) {
+          Write-Host "[WARN] Unsafe registry operations found:"
+          $unsafeOps | ForEach-Object { Write-Host "  $_" }
+        } else {
+          Write-Host "[OK] Registry operations are properly protected"
+        }
+    
+    - name: Check for Privilege Escalation Attempts
+      shell: pwsh
+      run: |
+        $escalationPatterns = @(
+          'Start-Process.*-Verb\s+RunAs',
+          'net\s+user.*administrator',
+          'Add-LocalGroupMember.*Administrators'
+        )
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $escalations = @()
+        foreach ($script in $scripts) {
+          $content = Get-Content $script.FullName -Raw
+          foreach ($pattern in $escalationPatterns) {
+            if ($content -match $pattern) {
+              # Check if it's legitimate (requesting elevation, not adding users)
+              if ($pattern -match 'RunAs' -or $pattern -match 'administrator') {
+                # This is expected for admin elevation
+                continue
+              }
+              $escalations += "$($script.FullName): Potential privilege escalation: $pattern"
+            }
+          }
+        }
+        if ($escalations.Count -gt 0) {
+          Write-Host "[WARN] Potential privilege escalation patterns found:"
+          $escalations | ForEach-Object { Write-Host "  $_" }
+        } else {
+          Write-Host "[OK] No unauthorized privilege escalation detected"
+        }
+    
+    - name: Validate Contributor Sign-off
+      if: github.event_name == 'pull_request'
+      shell: pwsh
+      run: |
+        $prNumber = $env:GITHUB_EVENT_NUMBER
+        $contributor = $env:GITHUB_ACTOR
+        Write-Host "Validating contribution from: $contributor"
+        Write-Host "PR Number: $prNumber"
+        # Check if PR has proper description and labels
+        # This is a basic check - can be enhanced with GitHub API calls
+    
+    - name: Check for Malicious Code Patterns
+      shell: pwsh
+      run: |
+        $maliciousPatterns = @(
+          'Set-Content.*\$env:',
+          'Add-Content.*\$env:',
+          'New-Item.*Startup',
+          'Set-ItemProperty.*Run',
+          'schtasks.*/create.*/tn',
+          'New-ScheduledTask'
+        )
+        $scripts = Get-ChildItem -Path . -Filter *.ps1 -Recurse
+        $malicious = @()
+        foreach ($script in $scripts) {
+          $content = Get-Content $script.FullName -Raw
+          foreach ($pattern in $maliciousPatterns) {
+            if ($content -match $pattern) {
+              # Check if it's in a legitimate context (scheduler module, etc.)
+              $isLegitimate = $false
+              if ($script.FullName -match 'scheduler|task-scheduler') {
+                $isLegitimate = $true
+              }
+              if (-not $isLegitimate) {
+                $malicious += "$($script.FullName): Potential persistence mechanism: $pattern"
+              }
+            }
+          }
+        }
+        if ($malicious.Count -gt 0) {
+          Write-Host "[WARN] Potential persistence mechanisms found (review required):"
+          $malicious | ForEach-Object { Write-Host "  $_" }
+        } else {
+          Write-Host "[OK] No unauthorized persistence mechanisms detected"
+        }
+

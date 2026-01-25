@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or Discussion
+    url: https://github.com/N0tHorizon/WindowsTelemetryBlocker/discussions
+    about: Ask questions or start discussions
+  - name: Security Issue
+    url: https://github.com/N0tHorizon/WindowsTelemetryBlocker/security
+    about: Report security vulnerabilities
+
