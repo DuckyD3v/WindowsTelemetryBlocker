@@ -1,8 +1,35 @@
 # ===============================
 # Windows Telemetry Blocker
-# Script Version: nextgen-0.9 (pending)
+$ScriptVersion = '0.9'
 # ===============================
 
+# ==== SAFETY BARRIER SYSTEM ====
+# Global state tracking for safe interruption handling
+$global:CriticalOperationInProgress = $false
+$global:CriticalOperationName = ""
+$global:CriticalOperationStartTime = $null
+$global:CleanupTasks = @()  # Queue of cleanup tasks to execute on exit
+$global:ModulesExecuted = @()  # Track which modules have been executed
+$global:PartialExecutionState = @{}  # Track state of partial operations
+
+# Set up trap handler for interruptions (Ctrl+C)
+trap {
+    Write-Host "`n`n[CRITICAL] Script interrupted!" -ForegroundColor Red
+    if ($global:CriticalOperationInProgress) {
+        Write-Host "[SAFETY] Currently in critical operation: $($global:CriticalOperationName)" -ForegroundColor Yellow
+        Write-Host "[SAFETY] Attempting graceful cleanup..." -ForegroundColor Yellow
+        & Invoke-SafeCleanup
+    }
+    Write-Host "`n[INFO] Executing cleanup tasks..." -ForegroundColor Cyan
+    & Invoke-CleanupTasks
+    Write-Host "[INFO] Emergency exit complete." -ForegroundColor Yellow
+    exit 1
+}
+
+# Register cleanup on script exit
+$ExecutionContext.SessionState.Module.OnRemove = {
+    & Invoke-CleanupTasks
+}
 
 param(
     [switch]$All,
@@ -76,8 +103,6 @@ if ($handledSpecial) {
     exit
 }
 
-$ScriptVersion = 'nextgen-0.9'
-
 # --- Banner ---
 Write-Host "===============================" -ForegroundColor Cyan
 Write-Host (" Windows Telemetry Blocker v{0}" -f $ScriptVersion) -ForegroundColor Cyan
@@ -131,6 +156,92 @@ function Write-Stats {
     } catch {
         Write-Log ("Failed to write stats: {0}" -f $_.Exception.Message) -Error
     }
+}
+
+# ==== SAFETY BARRIER FUNCTIONS ====
+function Register-CleanupTask {
+    param([scriptblock]$Task, [string]$Description)
+    $cleanup = @{
+        Task = $Task
+        Description = $Description
+        Timestamp = Get-Date
+    }
+    $global:CleanupTasks += $cleanup
+    Write-Log ("Cleanup task registered: {0}" -f $Description)
+}
+
+function Invoke-CleanupTasks {
+    if ($global:CleanupTasks.Count -eq 0) { return }
+    
+    Write-Host "`n[SAFETY] Executing registered cleanup tasks..." -ForegroundColor Cyan
+    Write-Log "[SAFETY] Executing cleanup tasks"
+    
+    # Execute in reverse order (LIFO - Last In, First Out)
+    for ($i = $global:CleanupTasks.Count - 1; $i -ge 0; $i--) {
+        $cleanup = $global:CleanupTasks[$i]
+        try {
+            Write-Host ("  [CLEANUP] {0}..." -f $cleanup.Description) -ForegroundColor Yellow
+            & $cleanup.Task
+            Write-Log ("Cleanup completed: {0}" -f $cleanup.Description)
+        } catch {
+            Write-Host ("  [ERROR] Cleanup failed: {0} - {1}" -f $cleanup.Description, $_.Exception.Message) -ForegroundColor Red
+            Write-Log ("Cleanup failed: {0} - {1}" -f $cleanup.Description, $_.Exception.Message) -Error
+        }
+    }
+}
+
+function Start-CriticalOperation {
+    param([string]$OperationName, [scriptblock]$Operation)
+    
+    $global:CriticalOperationInProgress = $true
+    $global:CriticalOperationName = $OperationName
+    $global:CriticalOperationStartTime = Get-Date
+    
+    Write-Host "`n[CRITICAL OPERATION START] $OperationName" -ForegroundColor Yellow
+    Write-Log "[CRITICAL OPERATION START] $OperationName"
+    Write-Host "[WARNING] Do not interrupt this operation (Ctrl+C will trigger automatic rollback)" -ForegroundColor Yellow
+    
+    try {
+        & $Operation
+        Write-Host "[CRITICAL OPERATION SUCCESS] $OperationName completed successfully" -ForegroundColor Green
+        Write-Log "[CRITICAL OPERATION SUCCESS] $OperationName"
+        return $true
+    } catch {
+        $duration = $(Get-Date) - $global:CriticalOperationStartTime
+        Write-Host "[CRITICAL OPERATION FAILED] $OperationName failed after $($duration.TotalSeconds)s" -ForegroundColor Red
+        Write-Log "[CRITICAL OPERATION FAILED] $OperationName failed: $($_.Exception.Message)" -Error
+        $global:PartialExecutionState[$OperationName] = @{
+            Failed = $true
+            Error = $_.Exception.Message
+            StartTime = $global:CriticalOperationStartTime
+            Duration = $duration
+        }
+        return $false
+    } finally {
+        $global:CriticalOperationInProgress = $false
+        $global:CriticalOperationName = ""
+    }
+}
+
+function Invoke-SafeCleanup {
+    Write-Host "`n[SAFETY] Initiating emergency rollback procedures..." -ForegroundColor Red
+    Write-Log "[SAFETY] Emergency rollback triggered"
+    
+    # Check if we need to rollback failed app removal
+    if ($global:PartialExecutionState.ContainsKey("AppRemoval") -and $global:PartialExecutionState["AppRemoval"].Failed) {
+        Write-Host "[SAFETY] Partial app removal detected - attempting restoration..." -ForegroundColor Yellow
+        try {
+            Write-Host "[SAFETY] Note: Windows Store apps cannot be fully restored automatically." -ForegroundColor Yellow
+            Write-Host "[SAFETY] Please reinstall affected apps manually if needed." -ForegroundColor Yellow
+            Write-Log "[SAFETY] Partial app removal - manual restoration may be needed"
+        } catch {
+            Write-Log "Failed to handle partial app removal: $($_.Exception.Message)" -Error
+        }
+    }
+    
+    # Registry restore is automatic on next Windows boot (restore point was created)
+    Write-Host "[SAFETY] System Restore Point was created at script start - use it to revert changes if needed." -ForegroundColor Yellow
+    Write-Log "[SAFETY] Registry rollback via System Restore Point available"
 }
 
 # ==== New Feature Functions ====
@@ -269,10 +380,27 @@ function New-SystemRestorePoint {
     try {
         Write-Host "`nCreating system restore point..." -ForegroundColor Yellow
         $restorePointName = "Windows Telemetry Blocker - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
-        Checkpoint-Computer -Description $restorePointName -RestorePointType "APPLICATION_INSTALL" -ErrorAction Stop
-        Write-Host "[OK] System restore point created successfully!" -ForegroundColor Green
-        Write-Log ("System restore point created: {0}" -f $restorePointName)
-        return $true
+        
+        # Use Start-CriticalOperation to wrap restore point creation
+        $result = Start-CriticalOperation -OperationName "Create System Restore Point" -Operation {
+            Checkpoint-Computer -Description $restorePointName -RestorePointType "APPLICATION_INSTALL" -ErrorAction Stop
+        }
+        
+        if ($result) {
+            Write-Host "[OK] System restore point created successfully!" -ForegroundColor Green
+            Write-Log ("System restore point created: {0}" -f $restorePointName)
+            
+            # Register cleanup to inform user about restore point availability
+            Register-CleanupTask -Task {
+                Write-Host "[SAFETY] Restore point available for rollback via System Restore." -ForegroundColor Yellow
+            } -Description "Notify about system restore point for rollback"
+            
+            return $true
+        } else {
+            Write-Host ("[ERROR] Failed to create system restore point: Check Windows System Restore settings.") -ForegroundColor Red
+            Write-Log "Failed to create system restore point"
+            return $false
+        }
     } catch {
         Write-Host ("[ERROR] Failed to create system restore point: {0}" -f $_.Exception.Message) -ForegroundColor Red
         Write-Log ("Failed to create system restore point: {0}" -f $_.Exception.Message) -Error
@@ -369,11 +497,11 @@ if (Test-PendingReboot) {
 
 # IMPORTANT, $checks is out due to scoping issues with functions defined below
 Write-Host "`n=== Running Pre-Execution Checks ===" -ForegroundColor Cyan
-#$checks = @(
-#    @{ Name = "Admin Privileges"; Function = { Test-AdminEvaluation } },
-#    @{ Name = "Windows Version"; Function = { Test-WinVersion } },
-#    @{ Name = "PowerShell Version"; Function = { Test-PowerShellVersion } }
-#)
+$checks = @(
+    @{ Name = "Admin Privileges"; Function = { Test-AdminEvaluation } },
+    @{ Name = "Windows Version"; Function = { Test-WinVersion } },
+    @{ Name = "PowerShell Version"; Function = { Test-PowerShellVersion } }
+)
 
 foreach ($check in $checks) {
     Write-Host ("`nChecking {0}..." -f $check.Name) -ForegroundColor Yellow

@@ -1,12 +1,13 @@
 # Module: apps.ps1
 # Purpose: Removes bloatware and disables unnecessary apps for privacy.
 # Used by: windowstelementryblocker.ps1
-. "$PSScriptRoot/common.ps1"
-if (-not $global:dryrun) { $global:dryrun = $false }
 
 param(
     [switch]$RemoveBloatware
 )
+
+. "$PSScriptRoot/common.ps1"
+if (-not $global:dryrun) { $global:dryrun = $false }
 
 # Disable Background Apps
 try {
@@ -83,13 +84,22 @@ $appsToRemove = @(
     "Microsoft.MixedReality.Portal"
 )
 
+# Track removed apps for potential recovery
+$removedApps = @()
+
 foreach ($app in $appsToRemove) {
     if ($global:dryrun) {
         Write-Host "[DRY-RUN] Would remove app: $app" -ForegroundColor DarkYellow
         Write-ModuleLog "[DRY-RUN] Would remove app: $app"
     } else {
         try {
+            # Check for interrupt signal
+            if ($global:CriticalOperationInProgress -and -not ($global:CriticalOperationName -like "*app*")) {
+                throw "Script interrupted by user during app removal"
+            }
+            
             Get-AppxPackage -Name $app -AllUsers | Remove-AppxPackage -ErrorAction SilentlyContinue
+            $removedApps += $app
             Write-Host "✓ Removed app: $app" -ForegroundColor Green
             Write-ModuleLog "Removed app: $app"
         } catch {
@@ -99,6 +109,9 @@ foreach ($app in $appsToRemove) {
     }
 }
 
-Write-Host "✓ Apps configured" -ForegroundColor Green
-Write-ModuleLog "Apps module completed"
+# Store removed apps in global state for recovery
+$global:PartialExecutionState["RemovedApps"] = $removedApps
+
+Write-Host "✓ Apps configured ($($removedApps.Count) apps removed)" -ForegroundColor Green
+Write-ModuleLog "Apps module completed ($($removedApps.Count) apps removed)"
 return $true
