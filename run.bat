@@ -2,7 +2,7 @@
 REM ============================================================================
 REM Windows Telemetry Blocker Launcher
 REM ============================================================================
-REM Version: 1.5h1
+REM Version: 1.5
 REM Description: Batch launcher for Windows Telemetry Blocker with menu system
 REM ============================================================================
 
