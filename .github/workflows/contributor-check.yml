@@ -156,7 +156,7 @@ jobs:
     
     - name: Comment PR with Validation Results
       if: always()
-      uses: actions/github-script@v6
+      uses: actions/github-script@v9
       with:
         script: |
           const fs = require('fs');
