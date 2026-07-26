@@ -18,7 +18,7 @@ jobs:
     name: Syntax and Structure Validation
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     - name: Check PowerShell Version
       shell: pwsh
@@ -110,7 +110,7 @@ jobs:
     name: Security and Code Quality
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     - name: Secret Scanning
       shell: pwsh
@@ -224,7 +224,7 @@ jobs:
     name: File Integrity and Required Files
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     - name: Check for Required Files
       shell: pwsh
